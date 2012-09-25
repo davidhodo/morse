@@ -1,5 +1,5 @@
 import logging; logger = logging.getLogger("morse." + __name__)
-logger.setLevel(logging.DEBUG)
+#logger.setLevel(logging.DEBUG)
 import os
 import sys
 import uuid
@@ -210,8 +210,9 @@ class RequestManager(object):
 
         logger.info("Incoming request " + service + " for " + component + "!")
 
-        request_id = uuid.uuid4() #Unique ID for our request
-        
+        #Unique ID for our request
+        request_id = uuid.uuid1()
+
         try:
             method, is_async = self._services[(component, service)]
         except KeyError:

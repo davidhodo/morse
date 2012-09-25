@@ -15,7 +15,7 @@ To test this module you can c/p the following code in Blender Python console::
 .. code-block:: python
     import sys
     sys.path.append("/usr/local/lib/python3/dist-packages")
-    from morse.builder.morsebuilder import *
+    from morse.builder import *
     atrv=Robot("atrv")
 
 The string passed to the differents Components Classes must be an existing
@@ -117,7 +117,7 @@ class Human(AbstractComponent):
     .. code-block:: python
        #! /usr/bin/env morseexec
 
-       from morse.builder.morsebuilder import *
+       from morse.builder import *
 
        human = Human()
        human.translate(x=5.5, y=-3.2, z=0.0)
@@ -131,9 +131,15 @@ class Human(AbstractComponent):
 
     Currently, only one human per simulation is supported.
     """
-    def __init__(self):
+    def __init__(self, style=None):
+        """ The 'style' parameter is only to switch to the mocap_human file. """
         AbstractComponent.__init__(self)
-        filepath = os.path.join(MORSE_COMPONENTS, 'robots', 'human.blend')
+        if style == 'ik_human':
+            filepath = os.path.join(MORSE_COMPONENTS, 'robots', 'mocap_human.blend')
+        elif style == 'mocap_human':
+            filepath = os.path.join(MORSE_COMPONENTS, 'robots', 'mocap_human.blend')
+        else:
+            filepath = os.path.join(MORSE_COMPONENTS, 'robots', 'human.blend')
 
         with bpy.data.libraries.load(filepath) as (src, _):
             try:
@@ -159,19 +165,29 @@ class Human(AbstractComponent):
                          " children). I won't be able to export the human pose" +\
                          " to any middleware.")
 
-        # fix for Blender 2.6 Animations
-        if bpy.app.version > (2,59,0):
-            if obj:
-                hips = self._get_selected("Hips_Empty")
-                i = 0
-                for act in hips.game.actuators:
-                    act.layer = i
-                    i = i + 1
+        # IK human has no object called Hips_Empty, so avoid this step
+        if not style:
+            # fix for Blender 2.6 Animations
+            if bpy.app.version > (2,59,0):
+                if obj:
+                    hips = self._get_selected("Hips_Empty")
+                    i = 0
+                    for act in hips.game.actuators:
+                        act.layer = i
+                        i = i + 1
 
-                i = 0
-                for act in obj.game.actuators:
-                    act.layer = i
-                    i = i + 1
+                    i = 0
+                    for act in obj.game.actuators:
+                        act.layer = i
+                        i = i + 1
+
+    def use_world_camera(self):
+        human = self._blendobj
+        human.game.properties['WorldCamera'].value = True
+
+    def disable_keyboard_control(self):
+        human = self._blendobj
+        human.game.properties['disable_keyboard_control'].value = True
 
 
 class Component(AbstractComponent):
@@ -499,6 +515,9 @@ class Environment(Component):
                     logger.debug("Node " + node_name + \
                         " will not publish robot " + obj.name)
                     p['Robot_Tag'].name = 'External_Robot_Tag'
+                    # Make external robots static
+                    # This should stop them from drifting downwards
+                    obj.game.physics_type = 'STATIC'
 
         """ Write the 'multinode_config.py' script """
         node_config = { 'protocol': self._protocol,
@@ -616,6 +635,12 @@ class Environment(Component):
         :param stereo: enum in ['NONE', 'STEREO', 'DOME'], default 'STEREO'
         """
         bpy.context.scene.game_settings.stereo = stereo
+
+    def set_animation_record(self, record=True):
+        """ Record animation to F-Curves, so you can render it later
+        :param record: boolean, default True
+        """
+        bpy.context.scene.game_settings.use_animation_record = record
 
     def configure_multinode(self, protocol='socket',
             server_address='localhost', server_port='65000', distribution=None):

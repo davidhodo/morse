@@ -5,7 +5,7 @@ set(PACKAGE_VERSION "0.5.99")
 
 
 option(BUILD_CORE_SUPPORT "Build and install morse core" ON)
-option(BUILD_DOC_SUPPORT "Build and install morse documentation (Requiere Sphinx)" ON)
+option(BUILD_DOC_SUPPORT "Build and install morse documentation (Requiere Sphinx)" OFF)
 
 option(BUILD_POCOLIBS_SUPPORT "Build pocolibs framework support" OFF)
 option(BUILD_YARP2_SUPPORT "Build yarp framework support" OFF)
@@ -148,18 +148,8 @@ ENDIF()
 ADD_SUBDIRECTORY(bindings)
 
 ###### Testing ######
-EXECUTE_PROCESS(COMMAND
-				${PYTHON3_EXECUTABLE} -c "import pymorse"
-								RESULT_VARIABLE PYTHON_ERR
-								OUTPUT_QUIET
-								ERROR_QUIET
-				)
-IF (PYTHON_ERR)
-	MESSAGE(WARNING "Can't run test, pymorse is required but cannot be found.\nYou may want to install it first.")
-ELSE()
-	enable_testing()
-	ADD_SUBDIRECTORY(testing)
-ENDIF()
+enable_testing()
+ADD_SUBDIRECTORY(testing)
 
 IF (BUILD_DOC_SUPPORT)
 ### Doc target ###
@@ -170,7 +160,7 @@ CONFIGURE_FILE(
 
 FIND_PROGRAM(SPHINX_BUILD NAMES sphinx-build)
 IF (NOT SPHINX_BUILD)
-	MESSAGE(STATUS "Can't find sphinx-build : will not build the documentation")
+	MESSAGE(FATAL_ERROR "Can't find sphinx-build : will not build the documentation")
 ELSE()
 	SET (SPHINX_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/doc/html)
 	SET (SPHINX_LATEX_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/doc/tex)
@@ -242,7 +232,7 @@ SET(CPACK_PACKAGE_VERSION ${PACKAGE_VERSION})
 SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 SET(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README")
 
-SET(CPACK_DEBIAN_PACKAGE_DEPENDS "python3-dev")
+SET(CPACK_DEBIAN_PACKAGE_DEPENDS "python3.2-dev")
 SET(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://morse.openrobots.org")
 
 INCLUDE(CPack)

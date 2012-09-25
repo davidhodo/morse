@@ -7,11 +7,6 @@ also provide the connection interface to use the information of the cameras
 attached to it. In the case of two cameras, it will provide the stereo
 information generated from the two camera images.
 
-
-.. image:: ../../../media/sensors/stereo_unit.png 
-  :align: center
-  :width: 600
-
 Files
 -----
 - Blender: ``$MORSE_ROOT/data/sensors/stereo_unit.blend``
@@ -45,7 +40,7 @@ appended to each other, as this is important to get the desired functionality:
 
 .. code-block:: python
 
-    from morse.builder.morsebuilder import *
+    from morse.builder import *
 
     # Add a robot
     ATRV = Robot('atrv')

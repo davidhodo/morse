@@ -8,7 +8,7 @@ from morse.testing.testing import MorseTestCase
 try:
     # Include this import to be able to use your test file as a regular 
     # builder script, ie, usable with: 'morse [run|exec] <your test>.py
-    from morse.builder.morsebuilder import *
+    from morse.builder import *
 except ImportError:
     pass
 
@@ -28,6 +28,7 @@ class PoseTest(MorseTestCase):
         
         pose = Sensor('pose')
         pose.configure_mw('socket')
+        pose.translate(z=-0.10) # atrv sensor is at 10cm on the groud
         robot.append(pose)
 
         env = Environment('indoors-1/indoor-1')

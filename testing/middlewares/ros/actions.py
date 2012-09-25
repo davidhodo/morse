@@ -8,7 +8,7 @@ from morse.testing.testing import MorseTestCase
 # Include this import to be able to use your test file as a regular 
 # builder script, ie, usable with: 'morse [run|exec] base_testing.py
 try:
-    from morse.builder.morsebuilder import *
+    from morse.builder import *
 except ImportError:
     pass
 
@@ -26,7 +26,7 @@ os.environ['ROS_PACKAGE_PATH'] += ":" + os.path.dirname(
 
 import roslib; roslib.load_manifest("morsetesting")
 import rospy
-import actionlib
+#import actionlib
 import subprocess
 from morsetesting.msg import *
 from geometry_msgs.msg import *

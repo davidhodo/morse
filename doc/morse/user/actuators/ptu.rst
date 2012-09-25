@@ -22,15 +22,15 @@ using the following keys:
 -  :kbd:`Home` pan left
 -  :kbd:`Insert` pan right
 
+Code samples
+------------
 
-Files 
------
+- `Scenario with a PTU from the component unit-test <https://github.com/laas/morse/blob/master/testing/base/ptu_testing.py#L28>`_ :tag:`builder` 
+- `Datastream usage, from the component unit-test <https://github.com/laas/morse/blob/master/testing/base/ptu_testing.py#L56>`_ :tag:`pymorse` :tag:`datastream` 
+- `Service usage, from the component unit-test <https://github.com/laas/morse/blob/master/testing/base/ptu_testing.py#L121>`_ :tag:`pymorse` :tag:`service` 
 
--  Blender: ``$MORSE_ROOT/data/actuators/ptu.blend``
--  Python: ``$MORSE_ROOT/src/morse/actuators/ptu.py``
-
-Local data 
-----------
+Exported data
+-------------
 
 -  **pan**: (float) rotation around the Z axis
 -  **tilt**: (float) rotation around the Y axis
@@ -38,10 +38,13 @@ Local data
 Configurable parameters
 -----------------------
 
--  **Speed**: (float) rotation speed for the movements of the pan-tilt unit. Default value is 1 radian/s
--  **Tolerance**: (float) the accepted error between the angle of each segment and the one specified. If set too low, the actuator will jump back and forth between positions close to those indicated. Default value is 0.005 radians
+-  **Speed**: (float) rotation speed for the movements of the pan-tilt unit.
+   Default value is 1 radian/s.
+-  **Tolerance**: (float) the accepted error between the angle of each segment
+   and the one specified. If set too low, the actuator will jump back and forth
+   between positions close to those indicated. Default value is 0.005 radians.
 -  **Manual**: (boolean) select whether to use control from an external
-   program or direct control using the **Logic Bricks**
+   program or direct control using the **Logic Bricks**.
 
 Services
 --------
@@ -66,6 +69,13 @@ Applicable modifiers
 --------------------
 
 No available modifiers
+
+Files 
+-----
+
+-  Blender: ``$MORSE_ROOT/data/actuators/ptu.blend``
+-  Python: ``$MORSE_ROOT/src/morse/actuators/ptu.py``
+
 
 Related components
 ------------------

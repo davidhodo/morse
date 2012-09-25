@@ -17,13 +17,10 @@
 
 import logging; logger = logging.getLogger("morse." + __name__)
 import math
-import bge
-import mathutils
+from morse.core import status, blenderapi, mathutils
 import morse.core.actuator
-from morse.core.services import service
-from morse.core.services import async_service
-from morse.core.services import interruptible
-from morse.core import status
+from morse.core.services import service, async_service, interruptible
+from morse.helpers.components import add_data, add_property
 
 class WaypointActuatorClass(morse.core.actuator.MorseActuatorClass):
     """ Waypoint motion controller
@@ -32,6 +29,19 @@ class WaypointActuatorClass(morse.core.actuator.MorseActuatorClass):
     make the robot move to that location by moving forward and turning.
     This controller is meant for land robots that can not move sideways.
     """
+    _name = "Waypoint"
+    add_property('_obstacle_avoidance', True, 'ObstacleAvoidance', 'boolean')
+    add_property('_free_z', False, 'FreeZ', 'boolean')
+    add_property('_angle_tolerance', math.radians(10), 'AngleTolerance', 'float', "Tolerance in radians regarding the final heading of the robot")
+    add_property('_speed', 1.0, 'Speed', 'float')
+
+    add_data('x', 0.0, "float", "X coordinate of the destination, in world frame")
+    add_data('y', 0.0, "float", "Y coordinate of the destination, in world frame")
+    add_data('z', 0.0, "float", "Z coordinate of the destination, in world frame")
+    add_data('tolerance', 0.5, "float", "Tolerance, in meter, to consider the destination as reached.")
+    add_data('speed', 1.0, "float", "If the property 'Speed' is set, use this speed as initial value.")
+ 
+
 
     def __init__(self, obj, parent=None):
 
@@ -49,20 +59,6 @@ class WaypointActuatorClass(morse.core.actuator.MorseActuatorClass):
         self._wp_object = None
         self._collisions = False
         
-        # Read the ObstacleAvoidance property
-        try:
-            self._obstacle_avoidance = obj['ObstacleAvoidance']
-        except KeyError:
-            self._obstacle_avoidance = True
-        # Read the FreeZ property
-        try:
-            self._free_z = obj['FreeZ']
-        except KeyError:
-            self._free_z = False
-
-        # Convert the direction tolerance to radians
-        self._angle_tolerance = math.radians(10)
-
         # Variable to store current speed. Used for the stop/resume services
         self._previous_speed = 0
 
@@ -75,20 +71,13 @@ class WaypointActuatorClass(morse.core.actuator.MorseActuatorClass):
         self.local_data['z'] = self._destination[2]
         # Waypoint tolerance (in meters)
         self.local_data['tolerance'] = 0.5
-        # Read the speed from the Blender object properties
-        try:
-            self.local_data['speed'] = self.blender_obj['Speed']
-            logger.info("Using specified speed of %d" % self.local_data['speed'])
-        # Otherwise use a default value
-        except KeyError as detail:
-            self.local_data['speed'] = 1.0
-            logger.info("Using default speed of %d" % self.local_data['speed'])
+        self.local_data['speed'] = self._speed
 
         # Identify an object as the target of the motion
         try:
             wp_name = self.blender_obj['Target']
             if wp_name != '':
-                scene = bge.logic.getCurrentScene()
+                scene = blenderapi.scene()
                 self._wp_object = scene.objects[wp_name]
                 logger.info("Using object '%s' to indicate motion target" % wp_name)
         except KeyError as detail:
@@ -132,7 +121,7 @@ class WaypointActuatorClass(morse.core.actuator.MorseActuatorClass):
         In most cases, the asynchronous service 'goto' should be 
         prefered.
 
-        Returns always True (if the robot is already moving, the
+        :return: Returns always True (if the robot is already moving, the
         previous target is replaced by the new one) except if
         the destination is already reached. In this case, returns
         False.
@@ -283,15 +272,11 @@ class WaypointActuatorClass(morse.core.actuator.MorseActuatorClass):
 
                 logger.debug("Angles: R=%.4f, T=%.4f  Diff=%.4f  Direction = %d" % (robot_angle, target_angle, angle_diff, rotation_direction))
 
-            # Tick rate is the real measure of time in Blender.
-            # By default it is set to 60, regardles of the FPS
-            # If logic tick rate is 60, then: 1 second = 60 ticks
-            ticks = bge.logic.getLogicTicRate()
             try:
                 # Compute the speeds
                 if self._type == 'Position':
-                    v = speed / ticks
-                    rotation_speed = (speed / ticks) / 2.0
+                    v = speed / self.frequency
+                    rotation_speed = (speed / self.frequency) / 2.0
                 elif self._type == 'Velocity':
                     v = speed
                     rotation_speed = 1.0 #speed / 2.0

@@ -1,11 +1,27 @@
 import logging; logger = logging.getLogger("morse." + __name__)
-import bge
 
+from morse.core import blenderapi
 import morse.core.sensor
 from morse.core.services import service
+from morse.helpers.components import add_data, add_property
 
 class ProximitySensorClass(morse.core.sensor.MorseSensorClass):
-    """ Distance sensor to detect nearby objects. """
+    """
+    This sensor can be used to determine which other objects are within a certain radius of the sensor. It performs its test based only on distance. The type of tracked objects can be specified using the ‘Track’ property.
+    """
+
+    _name = "Proximity Sensor"
+    _short_desc = "Distance sensor to detect nearby objects."
+
+    add_data('near_objects', {}, "dict", "A list of the tracked objects located within the given radius. The keys of the dictionary are the object names, and the values are the distances (in meters) from the sensor.")
+    add_data('near_robots', {}, "dict", "deprecated. Points to near_objects for compatibility reasons.")
+
+    add_property('_range', 100, 'Range', "float", "The distance, in meters beyond which this sensor is unable to locate other robots.")
+    add_property('_tag', 
+                 "Robot_Tag", 
+                 'Track', 
+                 "string", 
+                 "The type of tracked objects. This type is looked for as game property of scene objects. You must then add a new game property to the objects you want to be detected by the proximity sensor.")
 
     def __init__(self, obj, parent=None):
         """ Constructor method.
@@ -17,29 +33,28 @@ class ProximitySensorClass(morse.core.sensor.MorseSensorClass):
         # Call the constructor of the parent class
         super(self.__class__,self).__init__(obj, parent)
 
-        self.local_data['near_objects'] = {}
-        self.local_data['near_robots'] = {}
-        
-        try:
-            self._range = self.blender_obj['Range']
-        except KeyError:
-            # Set a default range of 100m
-            self._range = 100
-        
-        try:
-            self._tag = self.blender_obj['Track']
-        except KeyError:
-            # Set default tracked objects to 'Robots'
-            self._tag = "Robot_Tag"
         
         logger.info('Component initialized')
 
     @service
     def set_range(self, range):
+        """
+        The service expects a float range (in meter), and modify the range
+        used to detect objects around the proximity sensor.
+
+        :param range: detection range, in meters
+        """
         self._range = float(range)
 
     @service
     def set_tracked_tag(self, tag):
+        """
+        The service allows to modify the kind of objects detected by the
+        proximity sensor.
+
+        :param tag: value of the *Track* property used to select detected
+        objects.
+        """
         self._tag = tag
 
     def default_action(self):
@@ -51,7 +66,7 @@ class ProximitySensorClass(morse.core.sensor.MorseSensorClass):
         parent = self.robot_parent.blender_obj
 
         # Get the tracked sources
-        for obj in bge.logic.getCurrentScene().objects:
+        for obj in blenderapi.scene().objects:
             try:
                 obj[self._tag]
                 # Skip distance to self

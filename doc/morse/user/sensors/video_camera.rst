@@ -36,7 +36,7 @@ Local data
   object. The data is of size ``(cam_width X cam_height * 4)`` bytes. The image
   is stored as RGBA.
 - **intrinsic_matrix**: The intrinsic calibration matrix, stored as a 3x3
-  column major Matrix
+  row major Matrix
 
 Configurable parameters
 -----------------------
@@ -46,13 +46,19 @@ The Empty object corresponding to this sensor has the following parameters:
 - **capturing**: (Boolean) flag that determines whether the camera should
   generate an image. It can be toggled on or off by pressing the :kbd:`Space`.
   The default value should be `True`.
-- **cam_width**: (double) generated image width in pixels
-- **cam_height**: (double) generated image height in pixels
+- **cam_width**: (int) generated image width in pixels. The default value is
+  `256`.
+- **cam_height**: (int) generated image height in pixels. The default value is
+  `256`.
 - **cam_focal**: (double) camera focal length as defined in Blender (note: in
   Blender this parameter unit is "millimeters". This is actually misleading, as
-  there is no dimension associated to Blender units.)
+  there is no dimension associated to Blender units.) The default value is
+  `25.0`.
+- **cam_near**: (double) Adjust the `near_clipping` parameter of the camera
+  (Anything closer to the camera than `near_clipping` is not displayed). The
+  default value is `0.1` (meter).
 - **Vertical_Flip**: (Boolean) flag that determines whether the image should be 
-  flipped.
+  flipped. Default value is `False`.
 
 Camera calibration matrix
 -------------------------

@@ -1,14 +1,18 @@
 import logging; logger = logging.getLogger("morse." + __name__)
-import bge
 import morse.core.sensor
 import time
+from morse.helpers.components import add_data, add_property
 
 class BatteryClass(morse.core.sensor.MorseSensorClass):
     """ Class definition for the battery sensor.
         Sub class of Morse_Object. 
-
-        DischargingRate: float in percent-per-seconds (game-property)
     """
+
+    _name = "Battery Sensor"
+
+    add_property('_discharging_rate', 0.05, 'DischargingRate', "float", "Battery discharging rate, in percent per seconds")
+
+    add_data('charge', 100.0, "Initial battery level, in percent")
 
     def __init__(self, obj, parent=None):
         """ Constructor method.
@@ -18,8 +22,8 @@ class BatteryClass(morse.core.sensor.MorseSensorClass):
         # Call the constructor of the parent class
         super(self.__class__,self).__init__(obj, parent)
 
-        self.local_data['charge'] = 100.0
         self._time = time.clock()
+
 
         logger.info('Component initialized')
 
@@ -30,9 +34,13 @@ class BatteryClass(morse.core.sensor.MorseSensorClass):
         dt = newtime - self._time
 
         if self.isInChargingZone() and charge < 100:
-            charge = charge + (dt * self.blender_obj['DischargingRate'])
+            charge = charge + dt * self._discharging_rate
+            if charge > 100.0:
+                charge = 100.0
         elif charge > 0:
-            charge = charge - (dt * self.blender_obj['DischargingRate'])
+            charge = charge - dt * self._discharging_rate
+            if charge < 0.0:
+                charge = 0.0
 
         # Store the data acquired by this sensor that could be sent
         #  via a middleware.

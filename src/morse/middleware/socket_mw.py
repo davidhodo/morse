@@ -115,18 +115,28 @@ class MorseSocketClass(morse.core.middleware.MorseMiddlewareClass):
         # bge.logic.morse_services.register_request_manager_mapping("streams", "SocketRequestManager")
         services.do_service_registration(self.list_streams, 'simulation')
         services.do_service_registration(self.get_stream_port, 'simulation')
-    
+        services.do_service_registration(self.get_all_stream_ports, 'simulation')
+
     def list_streams(self):
+        """ List all publish streams.
+        """
         return list(self._component_nameservice.keys())
 
     def get_stream_port(self, name):
+        """ Get stream port for stream name.
+        """
         port = -1
         try:
             port = self._component_nameservice[name]
         except KeyError:
             pass
 
-        return port
+        return port        
+
+    def get_all_stream_ports(self):
+        """ Get stream ports for all streams.
+        """
+        return self._component_nameservice
 
     def register_component(self, component_name, component_instance, mw_data):
         """ Open the port used to communicate by the specified component.
@@ -167,19 +177,6 @@ class MorseSocketClass(morse.core.middleware.MorseMiddlewareClass):
 
     def read_message(self, msg):
         return json.loads(msg.decode('utf-8'))
-
-    def post_image(self, component_instance):
-        """ Send an RGB image using a port. (STILL INCOMPLETE)"""
-        try:
-            out_socket = self._socket_dict[component_instance.blender_obj.name]
-            
-            (conn, addr) = out_socket.accept()
-            logger.info('Socket Mid: Connected by', addr)
-            out_socket.send(message)
-
-        except KeyError as detail:
-            logger.error("Specified port does not exist: ", detail)
-    ### ^^^ NOT USED ^^^ ###
 
     def print_open_sockets(self):
         """ Display a list of all currently opened sockets."""

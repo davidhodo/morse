@@ -14,7 +14,7 @@ from pymorse import Morse
 # Include this import to be able to use your test file as a regular 
 # builder script, ie, usable with: 'morse [run|exec] base_testing.py
 try:
-    from morse.builder.morsebuilder import *
+    from morse.builder import *
 except ImportError:
     pass
 
@@ -50,6 +50,7 @@ class YARP_MW_Test(MorseTestCase):
         robot = Robot('atrv')
 
         pose = Sensor('pose')
+        pose.translate(z=-0.10)
         robot.append(pose)
         pose.configure_mw('yarp')
 

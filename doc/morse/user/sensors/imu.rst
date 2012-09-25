@@ -1,14 +1,15 @@
 Inertial measurement unit (IMU)
 ===============================
 
-This sensor emulates an Inertial Measurement Unit, measuring the distance that
-a robot has moved and the angles the robot has turned in 3D. Also the velocity
-and acceleration for each of these values is available. The arrays are in the
-following format: [x, y, z, roll, pitch, yaw]
+This sensor emulates an Inertial Measurement Unit, measuring the angular
+velocity and linear acceleration including acceleration due to gravity.
 
-.. image:: ../../../media/sensors/imu.png 
-  :align: center
-  :width: 600
+If the robot has a physics controller, the velocities are directly read from
+it's properties ``localAngularVelocity`` and ``worldLinearVelocity``.
+Otherwise the velocities are calculated by simple differentiation.
+Linear acceleration is always computed by differentiation of the linear velocity.
+The measurements are given in the IMU coordinate system, so the location
+and rotation of the IMU with respect to the robot is taken into account.
 
 Files
 -----
@@ -19,11 +20,15 @@ Files
 Local data
 ++++++++++
 
-- **distance**: (float) The distance travelled/turned since the last tick
-- **velocity**: (float) Computed as distance over time = distance * ticks
-- **acceleration**: (float) Computed as velocity difference over time = velocity * ticks
+- **angular_velocity**: (float array ) rates in IMU x, y, z axes
+- **linear_acceleration**: (float array ) acceleration in IMU x, y, z axes
 
 Applicable modifiers
 --------------------
 
-- No applicable modifiers at the moment
+This sensor always provides perfect data (except for errors induced by the
+physics engine and differentiation).
+To obtain more realistic readings, it is recommended to add modifiers.
+
+- :doc:`Noise modifier <../modifiers/imu_noise>`: Will add noise to the
+  measurements.

@@ -17,7 +17,7 @@ Prerequisites
 
 You should be familiar with the basic usage of ROS and how to use TF and
 the ROS navigation stack. You should also know about launchfiles and topic
-remapping as well as the robot state publisher. Also experience with RVIZ are
+remapping as well as the robot state publisher. Also experiences with RVIZ are
 of advantage. Tutorials on all of those topics can be found on
 http://www.ros.org/wiki/ROS/Tutorials.
 
@@ -52,22 +52,22 @@ will use the PR2 robot, but any robot (with an URDF file to describe it
 to RVIZ) would do.
 
 Let's create a first simple scenario script (``scenario.py``): a PR2 in a kitchen
-environment, a keyboard actuator to move it around, and a IMU sensor to
+environment, a keyboard actuator to move it around, and an Odometry sensor to
 get some odometry feedback.
 
 .. code-block:: python
 
-    from morse.builder.morsebuilder import *
+    from morse.builder import *
     from morse.builder.extensions.pr2extension import PR2
 
     # A 'naked' PR2 robot to the scene
     james = PR2()
     james.translate(x=2.5, y=3.2, z=0.0)
 
-    # A IMU sensor to get odometry information
-    imu = Sensor('imu')
-    james.append(imu)
-    imu.configure_mw('ros')
+    # An odometry sensor to get odometry information
+    odometry = Sensor('odometry')
+    james.append(odometry)
+    odometry.configure_mw('ros')
 
     # Keyboard control
     keyboard = Actuator('keyboard')
@@ -82,9 +82,9 @@ get some odometry feedback.
 Run it by first starting a ROS core (``roscore``) and then ``morse run
 scenario.py``.
 
-The IMU sensor automatically publish the TF transformation between the
+The Odometry sensor automatically publishes the TF transformation between the
 ``/odom`` and ``/base_footprint`` frames, so you actually do not need anything
-more to display the ``/base_footprint`` of your robot in RVIZ. Launch RVIZ
+more to display than the ``/base_footprint`` of your robot in RVIZ. Launch RVIZ
 (``rosrun rviz rviz``), select ``/odom`` as *Fixed frame*, and add a TF
 display. You should see the frames ``/odom`` and ``/base_footprint`` connected
 together, on a black background.
@@ -94,14 +94,14 @@ full robot TF tree (it is needed by the ROS localization stack to know where
 the laser scanner is).
 
 To do that, we need to publish the TF tree with the ``robot_state_publisher``
-module. This module takes as input the robot joint state (exported by a
-``pr2_posture`` sensor in our case) and the URDF file of our robot.
+module. This module takes the robot joint state (exported by a
+``pr2_posture`` sensor in our case) and the URDF file of our robot as input.
 
-First complete the ``scenario.py`` script to add a posture sensor:
+First complete the ``scenario.py`` script by adding a posture sensor:
 
 .. code-block:: python
 
-    from morse.builder.morsebuilder import *
+    from morse.builder import *
     from morse.builder.extensions.pr2extension import PR2
 
     # A PR2 robot to the scene
@@ -115,8 +115,8 @@ First complete the ``scenario.py`` script to add a posture sensor:
     [...]
 
 
-Then, to simplify our life, we create a new ROS node with only a launch file start will
-start for us the ``robot_state_publisher``::
+Then, to make our lives easier, we create a new ROS package and a launch file that will
+start the ``robot_state_publisher`` for us::
 
   $> mkdir morse_2dnav && cd morse_2dnav
   $> touch manifest.xml
@@ -166,12 +166,12 @@ PR2 TF tree.
    :align: center
 
 .. note::
-    You can display the robot geometry by add a *Robot Model* display in RVIZ.
+    You can display the robot geometry by adding a *Robot Model* display in RVIZ.
 
 Creating a map
 --------------
 
-The ROS navigation stacks include the powerful ``gmapping`` module that allows to easily build 2D maps using SLAM techniques.
+The ROS navigation stacks include the powerful ``gmapping`` module that allows us to easily build 2D maps using SLAM techniques.
 
 To do so, we first need to add a laser scanner to our PR2 model.
 
@@ -197,7 +197,7 @@ You can now run the ROS GMapping stack:
 
 ``rosrun gmapping slam_gmapping scan:=pr2/Sick _odom_frame:=/odom``
 
-Move around the robot in the simulation with the keyboard to fill the map
+Move around the robot in the simulation using the keyboard to fill the map
 (displayed in RVIZ).
 
 .. image:: ../../../media/MORSE_ROS-tutorial-2.jpg
@@ -216,7 +216,7 @@ following line to your launch file to start a map server with your map:
 
     <node name="map_server" pkg="map_server" type="map_server" args="$(find morse_2dnav)/map.yaml"/> 
 
-You do not need anymore the ``gmapping`` node, and you can kill it.
+You do not need the ``gmapping`` node anymore; you should kill it.
 
 Using ROS localization
 ----------------------
@@ -251,7 +251,7 @@ First, add AMCL to the launch file:
 .. code-block:: xml
 
     <node name="amcl" pkg="amcl" type="amcl"> 
-        <remap to="/scan" from="/pr2/Sick" />
+        <remap to="/pr2/Sick" from="/scan" />
     </node>
 
 Then, we need to add a motion controller to our robot. Open your ``scenario.py`` and add:
@@ -278,7 +278,7 @@ and add the following new section to your ``nav.launch`` file:
     <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen" clear_params="true">
         <remap from="/base_scan" to="/pr2/Sick"/>
         <remap from="/cmd_vel" to="/pr2/Motion_Controller"/>
-        <remap from="/odom" to="/pr2/IMU"/>
+        <remap from="/odom" to="/pr2/Odometry"/>
 
         <param name="footprint_padding" value="0.01" />
         <param name="controller_frequency" value="10.0" />

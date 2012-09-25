@@ -31,12 +31,13 @@ Required software
 +++++++++++++++++
 
 - Python (3.2 or +) On Linux: compiled with the ``--with-wide-unicode`` flag
+- Python-dev package (if installing from a repository)
 - Blender (>= 2.59 & < 2.62) build with Python 3.2
 - MORSE source code
 
 .. note::
   If you install Python by hand, the compilation must be done according to
-  your operating system, to match the Python complied in Blender:
+  your operating system, to match the Python compiled in Blender:
   
   - On **Linux** compile with the ``--with-wide-unicode`` flag. This will
     provide you with 4-byte Unicode characters (max size: 1114111)
@@ -44,7 +45,7 @@ Required software
   - On **Mac OS** do not use the ``--with-wide-unicode`` flag. This will
     provide you with 2-byte Unicode characters (max size: 65535)
  
-  It the sizes between your Python and Blender's do not match, you will get
+  It the unicode sizes between Python and Blender do not match, you will get
   errors about undefined symbols with names starting with  PyUnicodeUCS4
 
 If you plan to use the simulator with raw sockets of text files as "middleware",
@@ -75,7 +76,7 @@ Installation
     The directory where MORSE is installed will be referred to as ``$MORSE_ROOT`` in this document.
 
 It is recommended to store this environment variable, as it is necessary to
-use the :doc:`Builder API scripts <../dev/builder>` to generate simulation
+use the :doc:`Builder API scripts <../user/builder>` to generate simulation
 scenes with custom equipped robots.
 
 Manually

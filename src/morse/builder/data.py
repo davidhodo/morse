@@ -15,6 +15,9 @@ MORSE_MODIFIERS = {
     'NED': 'morse.modifiers.ned.MorseNEDClass',
     'UTM': 'morse.modifiers.utm.MorseUTMClass',
     'GPSNoise': 'morse.modifiers.gps_noise.MorseGPSNoiseClass',
+    'OdometryNoise': 'morse.modifiers.odometry_noise.MorseOdometryNoiseClass',
+    'IMUNoise': 'morse.modifiers.imu_noise.MorseIMUNoiseClass',
+    'PoseNoise': 'morse.modifiers.pose_noise.MorsePoseNoiseClass',
 }
 
 """
@@ -43,7 +46,8 @@ MORSE_MODIFIER_DICT = {
         'destination': [MORSE_MODIFIERS['NED'], 'ned_to_blender'],
         'waypoint': [MORSE_MODIFIERS['NED'], 'ned_to_blender'],
         'orientation': [MORSE_MODIFIERS['NED'], 'ned_angle_to_blender'],
-        'v_omega': [MORSE_MODIFIERS['NED'], 'ned_rate_to_blender'],
+        'teleport': [MORSE_MODIFIERS['NED'], 'ned_to_blender'],
+		'v_omega': [MORSE_MODIFIERS['NED'], 'ned_rate_to_blender'],
         'vw_diff_drive': [MORSE_MODIFIERS['NED'], 'ned_rate_to_blender'],
     },
     'UTM' : {
@@ -52,6 +56,13 @@ MORSE_MODIFIER_DICT = {
         'destination': [MORSE_MODIFIERS['UTM'], 'utm_to_blender'],
         'waypoint': [MORSE_MODIFIERS['UTM'], 'utm_to_blender'],
     },
+    'OdometryNoise' : {
+        'odometry': [MORSE_MODIFIERS['OdometryNoise'], 'noisify']
+    },
+    'Noise' : {
+        'imu': [MORSE_MODIFIERS['IMUNoise'], 'noisify'],
+        'pose': [MORSE_MODIFIERS['PoseNoise'], 'noisify'],
+    }
 }
 
 """
@@ -70,8 +81,9 @@ MORSE_MIDDLEWARE_DICT = {
         'gps': [MORSE_MIDDLEWARE_MODULE['ros'], 'post_message'],
         'gyroscope': [MORSE_MIDDLEWARE_MODULE['ros'], 'post_message'],
         'infrared': [MORSE_MIDDLEWARE_MODULE['ros'], 'post_range', 'morse/middleware/ros/infrared'],
-        'imu': [MORSE_MIDDLEWARE_MODULE['ros'], 'post_odometry', 'morse/middleware/ros/imu'],
+        'imu': [MORSE_MIDDLEWARE_MODULE['ros'], 'post_imu', 'morse/middleware/ros/imu'],
         'light': [MORSE_MIDDLEWARE_MODULE['ros'], 'read_switch', 'morse/middleware/ros/light'],
+        'odometry': [MORSE_MIDDLEWARE_MODULE['ros'], 'post_odometry', 'morse/middleware/ros/odometry'],
         'pose': [MORSE_MIDDLEWARE_MODULE['ros'], 'post_odometry', 'morse/middleware/ros/pose'],
         'proximity': [MORSE_MIDDLEWARE_MODULE['ros'], 'post_message'],
         'pr2_posture': [MORSE_MIDDLEWARE_MODULE['ros'], 'post_jointState', 'morse/middleware/ros/pr2_posture'],
@@ -81,11 +93,15 @@ MORSE_MIDDLEWARE_DICT = {
 
         'light': [MORSE_MIDDLEWARE_MODULE['ros'], 'read_switch', 'morse/middleware/ros/light'],
         'ptu': [MORSE_MIDDLEWARE_MODULE['ros'], 'read_Vector3', 'morse/middleware/ros/platine'],
-        'kuka_lwr': [MORSE_MIDDLEWARE_MODULE['ros'], 'read_joinState', 'morse/middleware/ros/kuka_joinState'],
+        'kuka_lwr': [MORSE_MIDDLEWARE_MODULE['ros'], 'read_jointState', 'morse/middleware/ros/kuka_jointState'],
         'v_omega': [MORSE_MIDDLEWARE_MODULE['ros'], 'read_twist', 'morse/middleware/ros/read_vw_twist'],
-        'vw_diff_drive': [MORSE_MIDDLEWARE_MODULE['ros'], 'read_twist', 'morse/middleware/ros/read_vw_twist'],
-        'xy_omega': [MORSE_MIDDLEWARE_MODULE['ros'], 'read_twist', 'morse/middleware/ros/read_xyw_twist'], 
-        'destination': [MORSE_MIDDLEWARE_MODULE['ros'], 'read_point', 'morse/middleware/ros/destination'], 
+        'vw_diff_drive': [MORSE_MIDDLEWARE_MODULE['ros'], 'read_twist', 'morse/middleware/ros/read_vw_twist'],        
+		'xy_omega': [MORSE_MIDDLEWARE_MODULE['ros'], 'read_twist', 'morse/middleware/ros/read_xyw_twist'],
+        'destination': [MORSE_MIDDLEWARE_MODULE['ros'], 'read_point', 'morse/middleware/ros/destination'],
+        'force_torque': [MORSE_MIDDLEWARE_MODULE['ros'], 'read_wrench', 'morse/middleware/ros/read_wrench'],
+        'orientation': [MORSE_MIDDLEWARE_MODULE['ros'], 'read_quaternion', 'morse/middleware/ros/read_quaternion'],
+        'teleport': [MORSE_MIDDLEWARE_MODULE['ros'], 'read_pose', 'morse/middleware/ros/read_pose'],
+        'rotorcraft_waypoint': [MORSE_MIDDLEWARE_MODULE['ros'], 'read_pose', 'morse/middleware/ros/read_pose'],
     },
 
     'socket': {
@@ -101,6 +117,7 @@ MORSE_MIDDLEWARE_DICT = {
         'rosace': [MORSE_MIDDLEWARE_MODULE['socket'], 'post_message'],
         'thermometer': [MORSE_MIDDLEWARE_MODULE['socket'], 'post_message'],
         'semantic_camera' : [MORSE_MIDDLEWARE_MODULE['socket'], 'post_semantic_camera', 'morse/middleware/sockets/semantic_camera'],
+        'video_camera' : [MORSE_MIDDLEWARE_MODULE['socket'], 'post_video_camera', 'morse/middleware/sockets/video_camera'],
 
         'destination': [MORSE_MIDDLEWARE_MODULE['socket'], 'read_message'],
         'gripper': [MORSE_MIDDLEWARE_MODULE['socket'], 'read_message'],
@@ -110,6 +127,7 @@ MORSE_MIDDLEWARE_DICT = {
         'steer_force': [MORSE_MIDDLEWARE_MODULE['socket'], 'read_message'],
         'v_omega': [MORSE_MIDDLEWARE_MODULE['socket'], 'read_message'],
         'waypoint': [MORSE_MIDDLEWARE_MODULE['socket'], 'read_message'],
+        'teleport': [MORSE_MIDDLEWARE_MODULE['socket'], 'read_message'],
     },
 
     'yarp': {
@@ -138,6 +156,7 @@ MORSE_MIDDLEWARE_DICT = {
         'steer_force': [MORSE_MIDDLEWARE_MODULE['yarp'], 'read_message'],
         'v_omega': [MORSE_MIDDLEWARE_MODULE['yarp'], 'read_message'],
         'waypoint': [MORSE_MIDDLEWARE_MODULE['yarp'], 'read_message'],
+        'teleport': [MORSE_MIDDLEWARE_MODULE['yarp'], 'read_message'],
     },
 
     'yarp_json': {
@@ -153,12 +172,17 @@ MORSE_MIDDLEWARE_DICT = {
         'stereo_unit': [MORSE_MIDDLEWARE_MODULE['pocolibs'], 'write_viam', 'morse/middleware/pocolibs/sensors/viam', 'viamMorseBench'],
         'ptu': [MORSE_MIDDLEWARE_MODULE['pocolibs'], 'read_platine', 'morse/middleware/pocolibs/actuators/platine', 'platine_orientation'],
         'kuka_lwr': [MORSE_MIDDLEWARE_MODULE['pocolibs'], 'read_lwr_config', 'morse/middleware/pocolibs/actuators/lwr', 'lwrCurrentPoseArmRight'],
-        'gyroscope': [MORSE_MIDDLEWARE_MODULE['pocolibs'], 'write_pom', 'morse/middleware/pocolibs/sensors/pom', 'MorseMEPos'],
+        'gyroscope': [MORSE_MIDDLEWARE_MODULE['pocolibs'], 'write_pom', 'morse/middleware/pocolibs/sensors/pom', 'MorseGyroscopeMEPos'],
+        'odometry': [MORSE_MIDDLEWARE_MODULE['pocolibs'], 'write_pom', 'morse/middleware/pocolibs/sensors/pom', 'MorseOdometryMEPos'],
+        'pose': [MORSE_MIDDLEWARE_MODULE['pocolibs'], 'write_pom', 'morse/middleware/pocolibs/sensors/pom', 'MorsePoseMEPos'],
+        'GPS': [MORSE_MIDDLEWARE_MODULE['pocolibs'], 'write_pom', 'morse/middleware/pocolibs/sensors/pom', 'MorseGPSMEPos'],
         'v_omega': [MORSE_MIDDLEWARE_MODULE['pocolibs'], 'read_genpos', 'morse/middleware/pocolibs/actuators/genpos', 'simu_locoSpeedRef'],
         'semantic_camera': [MORSE_MIDDLEWARE_MODULE['pocolibs'], 'write_viman', 'morse/middleware/pocolibs/sensors/viman', 'morse_viman'],
         'human_posture': [MORSE_MIDDLEWARE_MODULE['pocolibs'], 'export_posture', 'morse/middleware/pocolibs/sensors/human_posture', 'human_posture'],
         'rosace': [MORSE_MIDDLEWARE_MODULE['pocolibs'], 'write_target', 'morse/middleware/pocolibs/sensors/target', 'targetPos'],
-        'ptu_posture': [MORSE_MIDDLEWARE_MODULE['pocolibs'], 'write_platine_posture', 'morse/middleware/pocolibs/sensors/platine_posture', 'platineState']
+        'ptu_posture': [MORSE_MIDDLEWARE_MODULE['pocolibs'], 'write_platine_posture', 'morse/middleware/pocolibs/sensors/platine_posture', 'platineState'],
+        'ik_control': [MORSE_MIDDLEWARE_MODULE['pocolibs'], 'read_niut_ik_positions', 'morse/middleware/pocolibs/actuators/niut', 'niutHuman'],
+        'mocap_control': [MORSE_MIDDLEWARE_MODULE['pocolibs'], 'read_niut_ik_positions', 'morse/middleware/pocolibs/actuators/niut', 'niutHuman']
     },
 
     'text': {

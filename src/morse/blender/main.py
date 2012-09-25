@@ -1,11 +1,15 @@
 import logging; logger = logging.getLogger("morse." + __name__)
-from morse.core.logging import SECTION, ENDSECTION
+from morse.helpers.morse_logging import SECTION, ENDSECTION
 import sys
 import os
 import re
 import time
 import bpy
 import bge
+
+import morse
+morse.running_in_blender = True
+
 # The service management
 from morse.core.services import MorseServices
 
@@ -602,6 +606,7 @@ def init(contr):
     bge.logic.blenderVersion = bpy.app.version
     logger.info ("Python Version: %s.%s.%s" % bge.logic.pythonVersion[:3])
     logger.info ("Blender Version: %s.%s.%s" % bge.logic.blenderVersion)
+    logger.info ("PID: %d" % os.getpid())
 
     bge.logic.morse_initialised = False
     bge.logic.base_clock = time.clock()
@@ -653,7 +658,7 @@ def init_logging():
     else:
         ch = logging.StreamHandler()
     
-    from morse.core.logging import MorseFormatter
+    from morse.helpers.morse_logging import MorseFormatter
     # create logger
     logger = logging.getLogger('morse')
     logger.setLevel(logging.INFO)
@@ -782,6 +787,11 @@ def switch_camera(contr):
         next_camera = scene.cameras[index]
         scene.active_camera = next_camera
         logger.info("Showing view from camera: '%s'" % next_camera.name)
+        # Disable mouse cursor for Human camera
+        if next_camera.name == "Human_Camera":
+            bge.logic.mouse.visible = False
+        else:
+            bge.logic.mouse.visible = True
         # Update the index for the next call
         index = (index + 1) % len(scene.cameras)
         bge.logic.current_camera_index = index

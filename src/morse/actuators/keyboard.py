@@ -1,10 +1,13 @@
 import logging; logger = logging.getLogger("morse." + __name__)
-import bge
+from morse.core import blenderapi
 import morse.core.actuator
+from morse.helpers.components import add_data, add_property
 
 class KeyboardActuatorClass(morse.core.actuator.MorseActuatorClass):
     """ Class definition for a motion controller that changes speed
         and rotation of the robot using the keyboard arrows. """
+
+    add_property('_speed', 1.0, 'Speed', 'float')
 
     def __init__(self, obj, parent=None):
         logger.info('%s initialization' % obj.name)
@@ -16,16 +19,9 @@ class KeyboardActuatorClass(morse.core.actuator.MorseActuatorClass):
         #self._type = 'Velocity'
         self._type = 'Position'
 
-        try:
-            self._speed = obj['Speed']
-        except KeyError as detail:
-            self._speed = 1.0
-            logger.debug("Using default speed of 1.0")
-
         # Correct the speed considering the Blender clock
         if self._type == 'Position':
-            ticks = bge.logic.getLogicTicRate()
-            self._speed = self._speed / ticks
+            self._speed = self._speed / self.frequency
 
         logger.info('Component initialized')
 
@@ -34,7 +30,7 @@ class KeyboardActuatorClass(morse.core.actuator.MorseActuatorClass):
     def default_action(self):
         """ Interpret keyboard presses and assign them to movement
             for the robot."""
-        keys_sensor = bge.logic.getCurrentController().sensors['keys_sensor']
+        keys_sensor = blenderapi.controller().sensors['keys_sensor']
         #pressed_keys = keys_sensor.getPressedKeys()
         pressed_keys = keys_sensor.events
 
@@ -44,16 +40,16 @@ class KeyboardActuatorClass(morse.core.actuator.MorseActuatorClass):
 
         for key, status in pressed_keys:
             logger.debug("GOT: {0}, STATUS {1}".format(key, status))
-            if key == bge.events.UPARROWKEY:
+            if key == blenderapi.UPARROWKEY:
                 vx = self._speed
 
-            if key == bge.events.DOWNARROWKEY:
+            if key == blenderapi.DOWNARROWKEY:
                 vx = -self._speed
 
-            if key == bge.events.LEFTARROWKEY:
+            if key == blenderapi.LEFTARROWKEY:
                 rz = self._speed / 2.0
 
-            if key == bge.events.RIGHTARROWKEY:
+            if key == blenderapi.RIGHTARROWKEY:
                 rz = -self._speed / 2.0
 
         # Get the Blender object of the parent robot

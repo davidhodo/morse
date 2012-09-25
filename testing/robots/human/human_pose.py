@@ -11,7 +11,7 @@ from pymorse import Morse
 # Include this import to be able to use your test file as a regular 
 # builder script, ie, usable with: 'morse [run|exec] <your test>.py
 try:
-    from morse.builder.morsebuilder import *
+    from morse.builder import *
 except ImportError:
     pass
 
@@ -79,4 +79,4 @@ if __name__ == "__main__":
     import unittest
     from morse.testing.testing import MorseTestRunner
     suite = unittest.TestLoader().loadTestsFromTestCase(HumanPoseTest)
-    sys.exit(MorseTestRunner().run(suite).wasSuccessful())
+    sys.exit(not MorseTestRunner().run(suite).wasSuccessful())

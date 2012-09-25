@@ -4,8 +4,9 @@ ROS
 Installation
 ------------
 
-Due to lacking Python 3 compatibility of ROS message generation, you need to
-patch ROS. Furthermore you need to install PyYAML.
+Morse is supported by **ROS Fuerte** from patch release 1.8.15 which was rolled out at 20.July 2012
+You will also have to install PyYAML for Python3.2. If you want to use MORSE with ROS **Electric** 
+or **Diamondback**, you need to overlay some stacks due to lacking Python3 compatibility. 
 
 Please follow the instructions in the :doc:`installation procedure  <../installation/mw/ros>`.
 
@@ -73,8 +74,8 @@ documentation.
 - IMU sensor: Stored in the file: ``$MORSE_ROOT/src/morse/middleware/ros/imu.py``.
   It has one available method:
 
-	- ``post_odometry``: Exports the data of the IMU sensor as a ``nav_msgs/Odometry``
-	- ``post_velocity_twist``: Exports the data of the IMU sensor as a ``geometry_msgs/Twist``
+	- ``post_imu``: Exports the data of the IMU sensor (without covariance) as a 
+	  ``sensor_msgs/Imu`` message
 
 - Kuka-Arm controller: Stored in the file: ``$MORSE_ROOT/src/morse/middleware/ros/kuka_jointState.py``.
   Available methods:
@@ -102,6 +103,8 @@ documentation.
 	  publishes them as a ``nav_msgs/Odometry`` message.
 	- ``post_poseStamped``: Reads sensor-information from the pose sensor
 	  publishes them as a ``geometry_msgs/PoseStamped`` message.
+	- ``post_tf``: Reads sensor-information from the pose sensor
+	  publishes it as a tf transform between ``/map`` and ``/base_footprint``
 
 
 - v-omega actuator: Stored in the file: ``$MORSE_ROOT/src/morse/middleware/ros/read_vw_twist.py``.
@@ -144,3 +147,17 @@ documentation.
   Available methods:
 
     - ``read_point``: Reads a ``geometry_msgs/Point`` message from the specific ROS-topic and stores values for ``x``, ``y`` and ``z`` in ``local_data``.
+
+- Orientation actuator: Stored in the file: ``$MORSE_ROOT/src/morse/middleware/ros/read_quaternion.py``.
+  Available methods:
+	
+	- ``read_quaternion`` Reads a ``geometry_msgs/Quaternion`` message from
+	  the specific ROS-topic and converts it to an Euler representation
+	  ``yaw``, ``pitch``, ``roll`` in ``local_data``. 
+	  
+- Teleport actuator: Stored in the file: ``$MORSE_ROOT/src/morse/middleware/ros/read_pose.py``.
+  Available methods:
+	
+	- ``read_pose`` Reads a ``geometry_msgs/Pose`` message from
+	  the specific ROS-topic and stores position values for ``x``, ``y`` and ``z`` and orientation
+	  (converted to an Euler representation) as ``yaw``, ``pitch``, ``roll`` in ``local_data``. 

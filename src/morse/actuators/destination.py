@@ -1,6 +1,6 @@
 import logging; logger = logging.getLogger("morse." + __name__)
-import bge
 import morse.core.actuator
+from morse.helpers.components import add_data, add_property
 
 class DestinationActuatorClass(morse.core.actuator.MorseActuatorClass):
     """ Destination motion controller
@@ -9,14 +9,23 @@ class DestinationActuatorClass(morse.core.actuator.MorseActuatorClass):
     make the robot move to that location by moving without turning.
     """
 
+    _name = "Destination"
+    _short_desc = "Instruct the robot to move towards a given target"
+
+    add_data('x', 'current X pos')
+    add_data('y', 'current Y pos')
+    add_data('z', 'current Z pos')
+
+    add_property('_tolerance', 0.5, 'Tolerance')
+    add_property('_speed', 5.0, 'Speed')
+
+
     def __init__(self, obj, parent=None):
 
         logger.info('%s initialization' % obj.name)
         # Call the constructor of the parent class
         super(self.__class__,self).__init__(obj, parent)
 
-        self._tolerance = 0.5
-        self._speed = 5.0
         self.destination = self.blender_obj.position
 
         #self.local_data['speed'] = 0.0
@@ -47,17 +56,12 @@ class DestinationActuatorClass(morse.core.actuator.MorseActuatorClass):
         if distance > self._tolerance:
             # Set the robot status
             parent.move_status = "Transit"
-
-            # Tick rate is the real measure of time in Blender.
-            # By default it is set to 60, regardles of the FPS
-            # If logic tick rate is 60, then: 1 second = 60 ticks
-            ticks = bge.logic.getLogicTicRate()
     
             # Scale the speeds to the time used by Blender
             try:
-                vx = global_vector[0] * self._speed / ticks
-                vy = global_vector[1] * self._speed / ticks
-                vz = global_vector[2] * self._speed / ticks
+                vx = global_vector[0] * self._speed / self.frequency
+                vy = global_vector[1] * self._speed / self.frequency
+                vz = global_vector[2] * self._speed / self.frequency
             # For the moment ignoring the division by zero
             # It happens apparently when the simulation starts
             except ZeroDivisionError:
