@@ -323,6 +323,7 @@ MORSE_DATASTREAM_DICT = {
         },
         "morse.actuators.steer_force.SteerForce": {
         "default": {
+            "ros": 'morse.middleware.ros.steer_force.AckermannDriveReader',
             "socket": INTERFACE_DEFAULT_IN,
             "yarp": INTERFACE_DEFAULT_IN,
             }
