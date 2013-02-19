@@ -170,6 +170,8 @@ class WheeledRobot(Robot):
 
         Robot.append(self, obj, 2)
 
+    def __del__(self):
+        self.unparent_wheels()
 
 class Sensor(Component):
     def __init__(self, filename):
