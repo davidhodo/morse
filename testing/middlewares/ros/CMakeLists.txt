@@ -1,5 +1,4 @@
-add_morse_test(services)
-add_morse_test(data_stream)
+add_morse_test(topics)
 add_morse_test(sick)
 add_morse_test(video_camera)
 add_morse_test(depth_camera)

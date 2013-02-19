@@ -1,4 +1,4 @@
-from morse.middleware.ros_request_manager import ros_service, ros_action
+from morse.middleware.ros_request_manager import ros_action
 from morse.core.services import interruptible
 from morse.core.overlay import MorseOverlay
 from morse.core import status
@@ -20,7 +20,7 @@ class ArmatureController(MorseOverlay):
 
     It is meant to be applied on a Armature actuator.
 
-    Besides the ROS action server, it also sets a parameter with the list of
+    Besides the ROS action server, it also sets a ROS parameter with the list of
     joints.
     """
 
