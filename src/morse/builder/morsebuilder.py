@@ -170,6 +170,15 @@ class WheeledRobot(Robot):
 
         Robot.append(self, obj, 2)
 
+    def remove_wheels(self):
+        wheels = [child for child in self._blendobj.children if \
+                  child.name.lower().startswith("wheel")]
+        for wheel in wheels:
+            bpy.ops.object.select_all(action='DESELECT')
+            wheel.select = True
+            bpy.context.scene.objects.active = wheel
+            bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
+            
     def __del__(self):
         self.unparent_wheels()
 
