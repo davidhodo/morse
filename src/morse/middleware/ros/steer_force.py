@@ -7,10 +7,10 @@ class AckermannDriveReader(ROSReader):
     ros_class = AckermannDrive
 
     def update(self, message):
-        self.data["steer"] = message.steer_angle
+        self.data["steer"] = message.steering_angle
         if (abs(message.speed)<0.01):
             self.data["force"] = 0
-            self.data["brake"] = 10000
+            self.data["brake"] = 100
         else:
-            self.data["force"] = message.speed*10000
+            self.data["force"] = message.speed*1
             self.data["brake"] = 0  
