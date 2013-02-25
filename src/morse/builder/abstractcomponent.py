@@ -269,9 +269,9 @@ class AbstractComponent(object):
         component can make several calls to this function to add bindings with
         more than one middleware.
 
-        :param datastream: enum in ['ros', 'socket', 'yarp', 'text']
+        :param datastream: enum in ['ros', 'socket', 'yarp', 'text', 'pocolibs']
         :param classpath: if set, force to use the configuration of the given
-        component, instead of our own (default=None).
+                          component, instead of our own (default=None).
 
         You can pass other argument to this method, they will be added as a map
         to the configuration.
@@ -290,7 +290,8 @@ class AbstractComponent(object):
         # Configure the datastream for this component
         if not method:
             if not classpath in MORSE_DATASTREAM_DICT:
-                logger.error("%s: no interfaces available for this component! Check builder/data.py." % classpath)
+                logger.error("%s: no interfaces available for this component!"
+                             "Check builder/data.py." % classpath)
                 return
 
             interfaces = MORSE_DATASTREAM_DICT[classpath]
@@ -301,34 +302,55 @@ class AbstractComponent(object):
                     klass = load_module_attribute(module_name, class_name)
 
                     if not hasattr(klass, "_levels"):
-                        logger.error("Component <%s> does not declare any default interface. You must call `add_stream` with an explicit method and Python module." % str(classpath))
+                        logger.error("Component <%s> does not declare any "
+                                     "default interface. You must call "
+                                     "`add_stream` with an explicit method "
+                                     "and Python module." % str(classpath))
                         return
 
                     # iterate over levels to find the one with the default flag
                     for key, value in klass._levels.items():
                         if value[2] == True:
                             level = key
-                            self.properties(abstraction_level = level) # set the right default level
-                            logger.info("Using default level <%s> for component <%s>" % (level, classpath))
+                            # set the right default level
+                            self.properties(abstraction_level = level)
+                            logger.info("Using default level <%s> for "
+                                        "component <%s>" % (level, classpath))
                             break
 
                     if level == "default":
-                        logger.error("Component <%s> does not declare any default interface, and none of its abstraction levels is marked as the default one. You must call `add_stream` with an explicit method and Python module." % str(classpath))
+                        logger.error("Component <%s> does not declare any"
+                                     "default interface, and none of its "
+                                     "abstraction levels is marked as the "
+                                     "default one. You must call `add_stream`"
+                                     " with an explicit method and Python "
+                                     "module." % str(classpath))
                         return
 
                     if not level in interfaces:
-                        logger.error("%s: no interfaces defined for this component for abstraction level <%s>! Check builder/data.py." % (classpath, datastream, level))
+                        logger.error("%s: no interfaces defined for this "
+                                     "component for abstraction level <%s>!"
+                                     "Check builder/data.py." %
+                                     (classpath, level))
                         return
 
                 else:
-                    logger.error("%s: no interfaces defined for this component for abstraction level <%s>! Check builder/data.py." % (classpath, datastream, level))
+                    logger.error("%s: no interfaces defined for this component"
+                                 "for abstraction level <%s>! Check "
+                                 "builder/data.py." %
+                                 (classpath, level))
 
             interfaces = interfaces[level]
             if not datastream in interfaces:
-                logger.error("%s: no %s interface defined for this component for abstraction level <%s>! Check builder/data.py." % (classpath, datastream, level))
+                logger.error("%s: no %s interface defined for this component "
+                             "for abstraction level <%s>! "
+                             "Check builder/data.py." %
+                             (classpath, datastream, level))
                 return
 
             config = interfaces[datastream]
+            if isinstance(config, list):
+                config = config[0]
 
             if config == INTERFACE_DEFAULT_OUT:
                 config = INTERFACE_DEFAULT_OUT[datastream]
@@ -360,7 +382,7 @@ class AbstractComponent(object):
 
         Similar to the previous function. Its argument is the name of the
         interface to be used.
-        """
+        """ 
         if not component:
             component = self
         if not config:
@@ -371,16 +393,17 @@ class AbstractComponent(object):
         self.add_service(interface)
         self.add_stream(interface, **kwargs)
 
-    def add_modifier(self, mod, config=None):
+    def alter(self, modifier_name, config=None, **kwargs):
         """ Add a modifier specified by its first argument to the component """
         # Configure the modifier for this component
         if not config:
-            config = MORSE_MODIFIER_DICT[mod][self._blender_filename]
+            config = MORSE_MODIFIER_DICT[modifier_name][self._blender_filename]
+        config.append(kwargs)
         Configuration.link_modifier(self, config)
 
-    def configure_modifier(self, mod, config=None):
-        logger.warning("configure_modifier is deprecated, use add_modifier instead")
-        return self.add_modifier(mod, config)
+    def configure_modifier(self, mod, config=None, **kwargs):
+        logger.error("configure_modifier is deprecated, use alter instead")
+        return self.alter(mod, config, **kwargs)
 
     def add_overlay(self, datastream, overlay, config=None, **kwargs):
         """ Add a service overlay for a specific service manager to the component
@@ -449,8 +472,10 @@ class AbstractComponent(object):
         """ Make this component simulable in MORSE
 
         :param calling_module: Module called each simulation cycle.
-            enum in ['calling.sensor_action', 'calling.actuator_action',
-                    'calling.robot_action']
+                               enum in ['calling.sensor_action',
+                                        'calling.actuator_action',
+                                        'calling.robot_action']
+
         """
         if not calling_module:
             calling_module = 'calling.'+self._category[:-1]+'_action'

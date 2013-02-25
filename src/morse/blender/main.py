@@ -651,7 +651,7 @@ def init_supervision_services():
     virtual 'simulation' component to it, loads any other request
     manager mapped to the 'simulation' component and register all
     simulation management services declared in
-    :py:module:`morse.core.supervision_services` 
+    :py:mod:`morse.core.supervision_services` 
     """
 
     ###
@@ -751,9 +751,9 @@ def switch_camera(contr):
         logger.info("Showing view from camera: '%s'" % next_camera.name)
         # Disable mouse cursor for Human camera
         if next_camera.name == "Human_Camera":
-            blenderapi.mousepointer(visible = False)
+            morse.core.blenderapi.mousepointer(visible = False)
         else:
-            blenderapi.mousepointer(visible = True)
+            morse.core.blenderapi.mousepointer(visible = True)
         # Update the index for the next call
         index = (index + 1) % len(scene.cameras)
         persistantstorage.current_camera_index = index

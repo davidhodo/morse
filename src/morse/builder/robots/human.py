@@ -9,7 +9,7 @@ class Human(Robot):
     The human model currently available in MORSE comes with its
     own subjective camera and several features for object manipulation.
 
-    It also exposes a :doc:`human posture component <morse/user/sensors/human_posture>`
+    It also exposes a :doc:`human posture component <../sensors/human_posture>`
     that can be accessed by the ``armature`` member.
 
     Usage example:
@@ -47,7 +47,7 @@ class Human(Robot):
         try:
             self.armature = Armature("HumanArmature", "human_posture")
             # new way of loading class (drop 'Class' and 'Path' properties)
-            self.armature.properties(classpath="morse.sensors.human_posture.HumanPostureClass")
+            self.armature.properties(classpath="morse.sensors.human_posture.HumanPosture")
             self.append(self.armature)
         except KeyError:
             logger.error("Could not find the human armature! (I was looking " +\

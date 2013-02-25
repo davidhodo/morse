@@ -16,8 +16,8 @@ class StereoUnit(morse.core.sensor.Sensor):
     Related components
     ------------------
 
-    A stereo unit needs to be the parent of one or more :doc:`cameras <video_camera>`.
-    Otherwise, it does no useful function.
+    A stereo unit needs to be the parent of one or more :doc:`cameras
+    <../sensors/video_camera>`. Otherwise, it does no useful function.
 
     The movement of the stereo unit is implemented by making it the child of a
     :doc:`Pan-Tilt unit <../actuators/ptu>` actuator.
@@ -64,7 +64,7 @@ class StereoUnit(morse.core.sensor.Sensor):
 
     """
 
-    _name = "stereo_unit"
+    _name = "Stereo Camera Unit"
 
     def __init__(self, obj, parent=None):
         """ Constructor method.

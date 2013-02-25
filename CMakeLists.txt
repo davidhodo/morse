@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 2.6)
 set(PACKAGE_NAME morse)
 set(PACKAGE_VERSION "0.6.99")
 
+cmake_policy(SET CMP0017 OLD)
+
+
 
 option(BUILD_CORE_SUPPORT "Build and install morse core" ON)
 option(BUILD_DOC_SUPPORT "Build and install morse documentation (Requiere Sphinx)" OFF)
@@ -153,21 +156,8 @@ ELSE()
 	SET (SPHINX_LATEX_OUTPUT ${CMAKE_DOC_OUT}/tex)
 	SET (SPHINX_MAN_OUTPUT ${CMAKE_DOC_OUT}/man)
 	SET (SPHINX_FALSE_PYTHON_ENV ${CMAKE_CURRENT_BINARY_DIR}/fakeenv)
-	SET (PYTHON_DOC_ENV env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}/src:${SPHINX_FALSE_PYTHON_ENV}:${CMAKE_CURRENT_SOURCE_DIR}/src:${CMAKE_CURRENT_SOURCE_DIR}/testing:${CMAKE_CURRENT_SOURCE_DIR}/bindings/pymorse/src/:$$PYTHONPATH PYTHONDONTWRITEBYTECODE="morse")
+	SET (PYTHON_DOC_ENV env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_CURRENT_BINARY_DIR}/src:${SPHINX_FALSE_PYTHON_ENV}:${CMAKE_CURRENT_SOURCE_DIR}/src:${CMAKE_CURRENT_SOURCE_DIR}/testing:${CMAKE_CURRENT_SOURCE_DIR}/bindings/pymorse/src/:$$PYTHONPATH PYTHONDONTWRITEBYTECODE="morse")
 	SET (SPHINX_BUILD_ENV ${PYTHON_DOC_ENV} ${SPHINX_BUILD})
-
-	message(STATUS "echo ${SPHINX_BUILD_ENV}")
-	# Populate the false python environment
-	ADD_CUSTOM_TARGET(
-		populate_false_env ALL
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${SPHINX_FALSE_PYTHON_ENV}
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${SPHINX_FALSE_PYTHON_ENV}/mathutils
-		COMMAND ${CMAKE_COMMAND} -E touch ${SPHINX_FALSE_PYTHON_ENV}/mathutils/__init__.py
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${SPHINX_FALSE_PYTHON_ENV}/bge
-		COMMAND ${CMAKE_COMMAND} -E touch ${SPHINX_FALSE_PYTHON_ENV}/bge/__init__.py
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${SPHINX_FALSE_PYTHON_ENV}/PhysicsConstraints
-		COMMAND ${CMAKE_COMMAND} -E touch ${SPHINX_FALSE_PYTHON_ENV}/PhysicsConstraints/__init__.py
-	)
 
 	# Copy the documentation in builddir, so we can include the generated part too
 	ADD_CUSTOM_TARGET(
@@ -175,8 +165,6 @@ ELSE()
 		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/doc/morse ${SPHINX_SRC}/morse
 		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/doc/media ${SPHINX_SRC}/media
 	)
-
-	ADD_DEPENDENCIES(copy_doc revisiontag)
 
 	# Generate the documentation from the different components
 	ADD_CUSTOM_TARGET(
@@ -186,12 +174,49 @@ ELSE()
 	)
 
 	ADD_DEPENDENCIES(generate_doc copy_doc ${ALL_C_PYTHON_MODULES})
+
+	# Populate the false python environment
+	ADD_CUSTOM_TARGET(
+		populate_false_env ALL
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${SPHINX_FALSE_PYTHON_ENV}
+		COMMAND ${CMAKE_COMMAND} -E touch ${SPHINX_FALSE_PYTHON_ENV}/mathutils.py
+		COMMAND ${CMAKE_COMMAND} -E touch ${SPHINX_FALSE_PYTHON_ENV}/bge.py
+		COMMAND ${CMAKE_COMMAND} -E touch ${SPHINX_FALSE_PYTHON_ENV}/PhysicsConstraints.py
+
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${SPHINX_FALSE_PYTHON_ENV}/hla
+		COMMAND ${CMAKE_COMMAND} -E touch ${SPHINX_FALSE_PYTHON_ENV}/hla/__init__.py
+
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${SPHINX_FALSE_PYTHON_ENV}/pymoos
+		COMMAND ${CMAKE_COMMAND} -E touch ${SPHINX_FALSE_PYTHON_ENV}/pymoos/__init__.py
+		COMMAND ${CMAKE_COMMAND} -E touch ${SPHINX_FALSE_PYTHON_ENV}/pymoos/MOOSCommClient.py
+
+		COMMAND ${CMAKE_COMMAND} -E touch ${SPHINX_FALSE_PYTHON_ENV}/yarp.py
+	)
+
+	FILE(WRITE ${SPHINX_FALSE_PYTHON_ENV}/hla/omt.py "HLAfloat32LE=0\ndef HLAfixedArray(x,y,z):\n    pass")
+	FILE(WRITE ${SPHINX_FALSE_PYTHON_ENV}/hla/rti.py "class FederateAmbassador:\n    pass")
+
+	# GeNoM fake stuff
+	FOREACH(lib genPos lwr niut pom platine spark stereopixel viam viman)
+		ADD_CUSTOM_TARGET(
+			populate_false_env_${lib} ALL
+			COMMAND ${CMAKE_COMMAND} -E make_directory ${SPHINX_FALSE_PYTHON_ENV}/${lib}
+			COMMAND ${CMAKE_COMMAND} -E touch ${SPHINX_FALSE_PYTHON_ENV}/${lib}/struct.py
+			COMMAND ${CMAKE_COMMAND} -E touch ${SPHINX_FALSE_PYTHON_ENV}/${lib}/__init__.py
+		)
+		ADD_DEPENDENCIES(generate_doc populate_false_env_${lib})
+	ENDFOREACH()
+
+
+	ADD_DEPENDENCIES(copy_doc revisiontag ${SPHINX_FALSE_PYTHON_ENV}/hla/omt.py)
+
+
 	FIND_PROGRAM(SPHINX_APIDOC NAMES sphinx-apidoc)
 	IF (SPHINX_APIDOC)
 		ADD_CUSTOM_TARGET(
 			generate_api_doc ALL
-			COMMAND ${PYTHON_DOC_ENV} ${SPHINX_APIDOC} -o ${SPHINX_SRC}/morse/code ${CMAKE_CURRENT_SOURCE_DIR}/src
-			COMMAND ${PYTHON_DOC_ENV} ${SPHINX_APIDOC} -o ${SPHINX_SRC}/morse/code ${CMAKE_CURRENT_SOURCE_DIR}/testing)
+			COMMAND ${PYTHON_DOC_ENV} ${SPHINX_APIDOC} -f -o ${SPHINX_SRC}/morse/user/code ${CMAKE_CURRENT_SOURCE_DIR}/src
+			COMMAND ${PYTHON_DOC_ENV} ${SPHINX_APIDOC} -f -o ${SPHINX_SRC}/morse/user/code ${CMAKE_CURRENT_SOURCE_DIR}/testing)
 	ELSE()
 		ADD_CUSTOM_TARGET(
 			generate_api_doc ALL

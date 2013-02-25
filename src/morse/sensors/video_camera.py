@@ -91,7 +91,7 @@ class VideoCamera(morse.sensors.camera.Camera):
 
     def interrupt(self):
         self._n = 0
-        super(VideoCameraClass, self).interrupt()
+        super(VideoCamera, self).interrupt()
 
     @async_service
     def capture(self, n):
@@ -99,7 +99,7 @@ class VideoCamera(morse.sensors.camera.Camera):
         Capture **n** images
 
         :param n: the number of images to take. A negative number means
-        take image indefinitely
+                  take image indefinitely
         """
         self._n = n
 
