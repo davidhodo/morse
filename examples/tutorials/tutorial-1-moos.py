@@ -11,7 +11,7 @@ motion = MotionVW()
 atrv.append(motion)
 
 # Add datastream for our robot's components
-gyroscope.add_stream("morse.middleware.moos_datastream.MOOS", "post_gyroscope", "morse/middleware/moos/gyroscope")
-motion.add_stream("morse.middleware.moos_datastream.MOOS", "read_message")
+gyroscope.add_stream('moos')
+motion.add_stream('moos')
 
 env = Environment('indoors-1/indoor-1')

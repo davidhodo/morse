@@ -1,5 +1,5 @@
-What's new in MORSE 1.0-beta1?
-==============================
+What's new in MORSE 1.0?
+========================
 
 General
 -------
@@ -98,6 +98,19 @@ Builder API
   performance, but some sensors (like cameras) won't work. Most of the
   unit-tests now use this mode.
 
+.. warning::
+
+  It basically means that scene are incompatible between release 0.6 and 1.0.
+  To help the conversion, you can use the tool available `here
+  <https://raw.github.com/laas/morse/master/tools/convert_0.6_to_1.0.sh>`_
+  Basically, you can use it like that::
+
+		sh convert_0.6_to_1.0.sh your_scene.py > your_scene_1.0.py
+
+  You may need to edit the resulting file manually to fix last issues. If you
+  get in trouble, feel free to send us a mail on morse-users@laas.fr with your
+  scene.
+
 Assets
 ------
 
@@ -154,9 +167,10 @@ MORSE unit-tests now use this new API.
 Internals
 ---------
 
-- Substential changes in MORSE internals:
+- Substantial changes in MORSE internals:
+
   - lots of refactoring, to improve code consistency (including
-  {middleware->datastream} (#186))
+    {middleware->datastream} (#186))
   - many files have been renamed for consistency
 
 Misc
@@ -170,10 +184,11 @@ Misc
   deprecation or doubtful usefulness)
 - New CSS for documentation, based on GitHub *minimal* style.
 - Numerous bugfixes, including:
-    - the 'objects flying around' bug, that was due to the way Blender handle
-      transformation matrices (#139).
-    - a bug affecting the color of some materials
-    - bug with logging when restarting the simulation in special cases (#183)
+
+  - the 'objects flying around' bug, that was due to the way Blender handle
+    transformation matrices (#139).
+  - a bug affecting the color of some materials
+  - bug with logging when restarting the simulation in special cases (#183)
 
 
 Previous releases
