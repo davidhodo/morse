@@ -75,6 +75,7 @@ class AbstractComponent(object):
         self._category = category # for morseable
         self.basename = None
         self.children = []
+        self.children_to_remove = [] # list of child objects to remove after renaming
 
         AbstractComponent.components.append(self)
 
@@ -117,6 +118,42 @@ class AbstractComponent(object):
         finally:
             del builderscript_frame
             del frame
+
+    def unparent_objects_after_renaming(self, objs):
+        """ Set a list of objects to unparent after object renaming
+
+        """        
+        self.children_to_remove = self.children_to_remove + objs
+
+    def unparent_objects(self, objs):
+        """ Unparent child objects of the current object
+
+        Remove the objects in the list of object given as an argument as
+        children of the current object.  This method is generally used to
+        allow objects which are assembled from multiple objects using physics
+        constraints to be added to the scene as one object and then split apart
+        before starting the game engine.  The method maintains the current location
+        and orientation of the child objects.
+        """
+
+        # Force Blender to update the transformation matrices of objects
+        bpymorse.get_context_scene().update()
+        import mathutils
+        for obj in objs:
+            # Make a copy of the current transformation matrix
+            transformation = mathutils.Matrix(obj.matrix_world)
+            obj.parent = None
+            obj.matrix_world = transformation
+            # This method should be easier, but does not seem to work
+            #  because of an incorrect context error
+            #bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
+
+    def after_renaming(self):
+        """ Unparent the selected objects after renaming so that any 
+        transformations are applied to all objects.
+        """  
+        self.unparent_objects(self.children_to_remove)
+
 
     @property
     def name(self):

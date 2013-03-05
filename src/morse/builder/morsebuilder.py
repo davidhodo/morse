@@ -137,23 +137,12 @@ class Robot(Component):
 class WheeledRobot(Robot):
     def __init__(self, filename):
         Robot.__init__(self, filename)
-
-    def unparent_wheels(self):
-        """ Make the wheels orphans, but keep the transormation applied to
-            the parent robot """
-        # Force Blender to update the transformation matrices of objects
-        bpymorse.get_context_scene().update()
+        # Make the wheels orphans, but keep the transormation applied to
+        #    the parent robot
         wheels = [child for child in self._bpy_object.children if \
                   "wheel" in child.name.lower()]
-        import mathutils
-        for wheel in wheels:
-            # Make a copy of the current transformation matrix
-            transformation = mathutils.Matrix(wheel.matrix_world)
-            wheel.parent = None
-            wheel.matrix_world = transformation
-            # This method should be easier, but does not seem to work
-            #  because of an incorrect context error
-            #bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
+        self.unparent_objects_after_renaming(wheels)
+          
 
     def append(self, obj):
         """ Add a child to the current object
@@ -171,9 +160,6 @@ class WheeledRobot(Robot):
         obj._bpy_object.location[1] = tmp_x
 
         Robot.append(self, obj, 2)
-
-    def after_renaming(self):
-        self.unparent_wheels()
 
 
 
