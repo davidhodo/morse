@@ -1,9 +1,11 @@
 import logging; logger = logging.getLogger("morse." + __name__)
-import morse.core.robot
+from morse.robots.grasper import RobotGrasper
 from morse.core.services import service
+from morse.core import blenderapi
 
+logger.setLevel(logging.DEBUG)
 
-class PR2Class(morse.core.robot.Robot):
+class PR2Class(RobotGrasper):
     """ 
     Class definition for the PR2.
     Sub class of Morse_Object.
@@ -18,7 +20,12 @@ class PR2Class(morse.core.robot.Robot):
         """
         logger.info('%s initialization' % obj.name)
         # Call the constructor of the parent class
-        super(self.__class__,self).__init__(obj, parent)
+        RobotGrasper.__init__(self, obj, parent)
+
+        """
+        We define here the name of the pr2 grasping hand:
+        """
+        self.hand_name = 'Hand.Grasp.PR2'
 
         self.armatures = []
         # Search armatures and torso in all objects parented to the pr2 empty
@@ -70,7 +77,6 @@ class PR2Class(morse.core.robot.Robot):
         Returns a list [min,max]
         """
         return [self.TORSO_LOWER, self.TORSO_UPPER]
-
 
     def default_action(self):
         """
