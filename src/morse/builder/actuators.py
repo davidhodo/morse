@@ -50,21 +50,6 @@ class Keyboard(ActuatorCreator):
         sensor.use_pulse_true_level = True
         sensor.use_all_keys = True
 
-class KeyboardDiffDrive(ActuatorCreator):
-    def __init__(self, name=None):
-        ActuatorCreator.__init__(self, name, \
-                                 "morse.actuators.keyboard_diff_drive.KeyboardDiffDrive",\
-                                 "keyboard")
-        self.properties(Speed = 1.0)
-        obj = bpymorse.get_context_object()
-        # replace Always sensor by Keyboard sensor
-        sensor = obj.game.sensors[-1]
-        sensor.type = 'KEYBOARD'
-        # need to get the new Keyboard Sensor object
-        sensor = obj.game.sensors[-1]
-        sensor.use_pulse_true_level = True
-        sensor.use_all_keys = True
-
 # kuka_lwr uses Actuator from morse.builder
 class KukaLWR(Actuator):
     def __init__(self, name=None):
