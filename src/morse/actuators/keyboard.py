@@ -82,7 +82,7 @@ class Keyboard(Actuator):
             parent.setLinearVelocity([vx, vy, vz], True)
             parent.setAngularVelocity([rx, ry, rz / 2.0], True)
         elif self._type == 'Differential':
-            self.apply_vw_wheels(vx, -rz)
+            self.apply_vw_wheels(vx, rz)
 
     # from v_omega_diff_drive
     def apply_vw_wheels(self, vx, vw):
