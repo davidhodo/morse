@@ -61,6 +61,7 @@ class Odometry(morse.core.sensor.Sensor):
 
         self.previous_pos = self.original_pos.transformation3d_with(
                                                             self.position_3d)
+        self.original_pos = self.previous_pos
 
         logger.info('Component initialized')
 
