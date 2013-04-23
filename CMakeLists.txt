@@ -141,7 +141,7 @@ ENDIF()
 ADD_SUBDIRECTORY(bindings)
 
 ###### Testing ######
-enable_testing()
+include( CTest )
 ADD_SUBDIRECTORY(testing)
 
 IF (BUILD_DOC_SUPPORT)
@@ -161,7 +161,21 @@ ELSE()
 	SET (SPHINX_LATEX_OUTPUT ${CMAKE_DOC_OUT}/tex)
 	SET (SPHINX_MAN_OUTPUT ${CMAKE_DOC_OUT}/man)
 	SET (SPHINX_FALSE_PYTHON_ENV ${CMAKE_CURRENT_BINARY_DIR}/fakeenv)
-	SET (PYTHON_DOC_ENV env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_CURRENT_BINARY_DIR}/src:${SPHINX_FALSE_PYTHON_ENV}:${CMAKE_CURRENT_SOURCE_DIR}/src:${CMAKE_CURRENT_SOURCE_DIR}/testing:${CMAKE_CURRENT_SOURCE_DIR}/bindings/pymorse/src/:$$PYTHONPATH PYTHONDONTWRITEBYTECODE="morse" LANG="C.UTF-8" LC_ALL="C.UTF-8")
+
+	# Find an UTF-8 locale available on the system
+	EXECUTE_PROCESS(COMMAND locale -a
+					COMMAND grep -iE "utf-?8" 
+					COMMAND cut -d . -f 1
+					COMMAND head -n 1
+					OUTPUT_VARIABLE LOCALE_
+					ERROR_VARIABLE LOCALE_ERR
+					RESULT_VARIABLE LOCALE_RES
+				)
+	IF (NOT (LOCALE_RES EQUAL 0) OR (${LOCALE_} STREQUAL ""))
+		MESSAGE(FATAL_ERROR "Can't find UTF-8 locale: will not build the documentation")
+	ENDIF()
+	STRING(STRIP ${LOCALE_} LOCALE)
+	SET (PYTHON_DOC_ENV env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_CURRENT_BINARY_DIR}/src:${SPHINX_FALSE_PYTHON_ENV}:${CMAKE_CURRENT_SOURCE_DIR}/src:${CMAKE_CURRENT_SOURCE_DIR}/testing:${CMAKE_CURRENT_SOURCE_DIR}/bindings/pymorse/src/:$$PYTHONPATH PYTHONDONTWRITEBYTECODE="morse" LANG="${LOCALE}.UTF-8" LC_ALL="${LOCALE}.UTF-8")
 	SET (SPHINX_BUILD_ENV ${PYTHON_DOC_ENV} ${SPHINX_BUILD})
 
 	# Copy the documentation in builddir, so we can include the generated part too
@@ -251,6 +265,12 @@ ELSE()
         								   ${SPHINX_MAN_OUTPUT} &&
 						  ${GZIP} -f ${SPHINX_MAN_OUTPUT}/*.1)
 		INSTALL(FILES ${SPHINX_MAN_OUTPUT}/morse.1.gz 
+					  ${SPHINX_MAN_OUTPUT}/morse-run.1.gz 
+					  ${SPHINX_MAN_OUTPUT}/morse-create.1.gz 
+					  ${SPHINX_MAN_OUTPUT}/morse-edit.1.gz 
+					  ${SPHINX_MAN_OUTPUT}/morse-check.1.gz 
+					  ${SPHINX_MAN_OUTPUT}/morse-add.1.gz 
+					  ${SPHINX_MAN_OUTPUT}/morse-rm.1.gz 
 					  ${SPHINX_MAN_OUTPUT}/morseexec.1.gz 
 					  ${SPHINX_MAN_OUTPUT}/multinode_server.1.gz
 			DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man1

@@ -82,11 +82,13 @@ with specific requirements.
 .. toctree::
     :maxdepth: 1
 
+    user/advanced_tutorials/a_journey_to_a_new_simulation
     user/advanced_tutorials/cat_and_mouse
     user/advanced_tutorials/flying_cat_and_mouse
     user/advanced_tutorials/ros_nav_tutorial
     user/advanced_tutorials/mocap_tutorial
     user/advanced_tutorials/request_tutorial
+    user/advanced_tutorials/noise_ghost_tutorial
     
 Multi-node tutorials
 --------------------

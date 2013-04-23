@@ -6,7 +6,7 @@ import copy
 from morse.builder import bpymorse
 from morse.builder.data import *
 
-from morse.helpers.loading import load_module_attribute
+from morse.helpers.loading import get_class, load_module_attribute
 
 class Configuration(object):
     datastream = {}
@@ -271,16 +271,24 @@ class AbstractComponent(object):
     def select(self):
         bpymorse.select_only(self._bpy_object)
 
-    def get_child(self, name, objects=None):
-        """ get_child returns the child named :param name: """
-        if not objects:
+    def get_child(self, name, objects=None, recursive=True):
+        """ get_child returns the child named :param name: 
+        
+        If several children match the name, a warning is printed and
+        the first one is returned.
+
+        :param name: the textual name of the child
+        :param objects: if specified, look for the child in this list of bpy Objects
+        :param recursive: (default: True) if true, search for the child recursively
+        """
+        if objects is None:
             objects = self._bpy_object.children
         for obj in objects:
             if obj.name == name:
                 return obj
         # fix Blender shorten the name
         # ie. 'torso_lift_armature' -> 'torso_lift_armatu.000'
-        test_prefix = name[:17] + '.'
+        test_prefix = name[:-3] + '.'
         # look for candidates
         candidates = [obj for obj in objects \
                       if obj.name.startswith(test_prefix)]
@@ -289,8 +297,12 @@ class AbstractComponent(object):
                 logger.warning(test_prefix + ": more than 1 candidate: " + \
                                str(candidates))
             return candidates[0]
-        else:
-            logger.warning(test_prefix + ": no candidate in " + str(objects))
+        
+        # nothing found yet. Start to search recursively:
+        if recursive:
+            for obj in objects:
+                found = self.get_child(name, obj.children, recursive)
+                if found: return found
 
         return None
 
@@ -298,7 +310,7 @@ class AbstractComponent(object):
         logger.warning("configure_mw is deprecated, use add_stream instead")
         return self.add_stream(datastream, method, path, component)
 
-    def add_stream(self, datastream, method=None, path=None, classpath=None, **kwargs):
+    def add_stream(self, datastream, method=None, path=None, classpath=None, direction = None, **kwargs):
         """ Add a data stream interface to the component
 
         Do the binding between a component and the method to export/import its
@@ -321,80 +333,111 @@ class AbstractComponent(object):
         if not classpath:
             classpath = self.property_value("classpath")
 
+        if not classpath:
+            logger.error("%s: no classpath defined for this "
+                         "component! Check component definition " % self.name)
+            return
+
         level = self.property_value("abstraction_level") or "default"
 
         config = []
         # Configure the datastream for this component
         if not method:
             if not classpath in MORSE_DATASTREAM_DICT:
-                logger.error("%s: no interfaces available for this component!"
-                             "Check builder/data.py." % classpath)
-                return
 
-            interfaces = MORSE_DATASTREAM_DICT[classpath]
-            if not level in interfaces:
+                # Check if we can use default interface...
+                from morse.core.actuator import Actuator
+                from morse.core.sensor import Sensor
+                klass = get_class(classpath)
+                if klass and \
+                   issubclass(klass, Actuator) and \
+                   datastream in INTERFACE_DEFAULT_IN:
 
-                if level == "default": # we need to look for the default level
-                    module_name, class_name = classpath.rsplit('.', 1)
-                    klass = load_module_attribute(module_name, class_name)
+                    logger.warning("%s: no interfaces available for this "
+                                   "component! Trying to use default one "
+                                   "for %s." % (classpath, datastream))
+                    config = [INTERFACE_DEFAULT_IN[datastream]]
 
-                    if not hasattr(klass, "_levels"):
-                        logger.error("Component <%s> does not declare any "
-                                     "default interface. You must call "
-                                     "`add_stream` with an explicit method "
-                                     "and Python module." % str(classpath))
-                        return
+                elif klass and \
+                     issubclass(klass, Sensor) and \
+                     datastream in INTERFACE_DEFAULT_OUT:
 
-                    # iterate over levels to find the one with the default flag
-                    for key, value in klass._levels.items():
-                        if value[2] == True:
-                            level = key
-                            # set the right default level
-                            self.properties(abstraction_level = level)
-                            logger.info("Using default level <%s> for "
-                                        "component <%s>" % (level, classpath))
-                            break
-
-                    if level == "default":
-                        logger.error("Component <%s> does not declare any"
-                                     "default interface, and none of its "
-                                     "abstraction levels is marked as the "
-                                     "default one. You must call `add_stream`"
-                                     " with an explicit method and Python "
-                                     "module." % str(classpath))
-                        return
-
-                    if not level in interfaces:
-                        logger.error("%s: no interfaces defined for this "
-                                     "component for abstraction level <%s>!"
-                                     "Check builder/data.py." %
-                                     (classpath, level))
-                        return
+                    logger.warning("%s: no interfaces available for this "
+                                   "component! Trying to use default one "
+                                   "for %s." % (classpath, datastream))
+                    config = [INTERFACE_DEFAULT_OUT[datastream]]
 
                 else:
-                    logger.error("%s: no interfaces defined for this component"
-                                 "for abstraction level <%s>! Check "
-                                 "builder/data.py." %
-                                 (classpath, level))
+                    logger.error("%s: no interfaces available for this component!"
+                                " Check builder/data.py." % classpath)
+                    return
 
-            interfaces = interfaces[level]
-            if not datastream in interfaces:
-                logger.error("%s: no %s interface defined for this component "
-                             "for abstraction level <%s>! "
-                             "Check builder/data.py." %
-                             (classpath, datastream, level))
-                return
+            else:
+                interfaces = MORSE_DATASTREAM_DICT[classpath]
 
-            config = interfaces[datastream]
-            if isinstance(config, list):
-                config = config[0]
+                if not level in interfaces:
 
-            if config == INTERFACE_DEFAULT_OUT:
-                config = INTERFACE_DEFAULT_OUT[datastream]
-            if config == INTERFACE_DEFAULT_IN:
-                config = INTERFACE_DEFAULT_IN[datastream]
-            if isinstance(config, str):
-                config = [config]
+                    if level == "default": # we need to look for the default level
+                        module_name, class_name = classpath.rsplit('.', 1)
+                        klass = load_module_attribute(module_name, class_name)
+
+                        if not hasattr(klass, "_levels"):
+                            logger.error("Component <%s> does not declare any "
+                                        "default interface. You must call "
+                                        "`add_stream` with an explicit method "
+                                        "and Python module." % str(classpath))
+                            return
+
+                        # iterate over levels to find the one with the default flag
+                        for key, value in klass._levels.items():
+                            if value[2] == True:
+                                level = key
+                                # set the right default level
+                                self.properties(abstraction_level = level)
+                                logger.info("Using default level <%s> for "
+                                            "component <%s>" % (level, classpath))
+                                break
+
+                        if level == "default":
+                            logger.error("Component <%s> does not declare any"
+                                        "default interface, and none of its "
+                                        "abstraction levels is marked as the "
+                                        "default one. You must call `add_stream`"
+                                        " with an explicit method and Python "
+                                        "module." % str(classpath))
+                            return
+
+                        if not level in interfaces:
+                            logger.error("%s: no interfaces defined for this "
+                                        "component for abstraction level <%s>!"
+                                        "Check builder/data.py." %
+                                        (classpath, level))
+                            return
+
+                    else:
+                        logger.error("%s: no interfaces defined for this component"
+                                    "for abstraction level <%s>! Check "
+                                    "builder/data.py." %
+                                    (classpath, level))
+
+                interfaces = interfaces[level]
+                if not datastream in interfaces:
+                    logger.error("%s: no %s interface defined for this component "
+                                "for abstraction level <%s>! "
+                                "Check builder/data.py." %
+                                (classpath, datastream, level))
+                    return
+
+                config = interfaces[datastream]
+                if isinstance(config, list):
+                    config = config[0]
+
+                if config == INTERFACE_DEFAULT_OUT:
+                    config = INTERFACE_DEFAULT_OUT[datastream]
+                if config == INTERFACE_DEFAULT_IN:
+                    config = INTERFACE_DEFAULT_IN[datastream]
+                if isinstance(config, str):
+                    config = [config]
 
         elif not path:
             config = [method]
@@ -434,11 +477,13 @@ class AbstractComponent(object):
         self.add_service(interface)
         self.add_stream(interface, **kwargs)
 
-    def alter(self, modifier_name, config=None, **kwargs):
+    def alter(self, modifier_name, classpath=None, **kwargs):
         """ Add a modifier specified by its first argument to the component """
         # Configure the modifier for this component
-        if not config:
-            config = MORSE_MODIFIER_DICT[modifier_name][self._blender_filename]
+        config = []
+        if not classpath:
+            classpath = MORSE_MODIFIER_DICT[modifier_name][self._blender_filename]
+        config.append(classpath)
         config.append(kwargs)
         Configuration.link_modifier(self, config)
 
@@ -563,21 +608,26 @@ class AbstractComponent(object):
             filepath = os.path.join(MORSE_COMPONENTS, self._category, \
                                     component + '.blend')
 
+        looked_dirs = [filepath]
+
         if not os.path.exists(filepath):
             # Search for some blend file in different paths
             filepath = None
-            resource_path = MORSE_RESOURCE_PATH.split(':')
+            resource_path = MORSE_RESOURCE_PATH.split(os.pathsep)
             for path in resource_path:
                 tmp = os.path.join(path, component)
+                looked_dirs.append(tmp)
                 if os.path.exists(tmp):
                     filepath = tmp
                     break
             # Check if we got a match
+
             if not filepath:
-                logger.error("Blender file '%s' for external asset import can" \
-                             "not be found.\nEither provide an absolute path," \
-                             " or a path relative to MORSE assets directory\n" \
-                             "(typically $PREFIX/share/morse/data)"%component)
+                logger.error("Error while trying to load '%s': model not found.\n"
+                             "I was looking for one of these files: \n%s\n"
+                             "Either provide an absolute path, or a path relative \n"
+                             "to MORSE assets directories ($MORSE_RESOURCE_PATH \n"
+                             "or default path, typically $PREFIX/share/morse/data)."% (component, looked_dirs))
                 return
 
         if not objects: # link_append all objects from blend file
@@ -627,6 +677,15 @@ class AbstractComponent(object):
                             if obj.name not in objects_names]
 
         return imported_objects
+
+    def _make_transparent(self, obj, alpha):
+        obj.game.physics_type = 'NO_COLLISION'
+        for m in obj.material_slots:
+            m.material.use_transparency = True
+            m.material.alpha = alpha
+            m.material.transparency_method = 'Z_TRANSPARENCY'
+        for c in obj.children:
+            self._make_transparent(c, alpha)
 
     def profile(self):
         """ Watch the average time used during the simulation.

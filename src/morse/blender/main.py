@@ -16,6 +16,7 @@ persistantstorage = morse.core.blenderapi.persistantstorage()
 from morse.core.services import MorseServices
 from morse.core.sensor import Sensor
 from morse.core.actuator import Actuator
+from morse.core.modifier import register_modifier
 from morse.helpers.loading import create_instance, create_instance_level
 
 # Constants for stream directions
@@ -29,7 +30,6 @@ try:
     
 except ImportError as detail:
     logger.warning("%s.\nNo datastream/services/modifiers will be configured.\nMake sure the script 'component_config.py' is present in the .blend file." % detail)
-
 
 MULTINODE_SUPPORT = False
 # The file multinode_config.py is at the moment included
@@ -304,7 +304,7 @@ def link_datastreams():
     try:
         component_list = component_config.component_datastream
     except (AttributeError, NameError) as detail:
-        # Exit gracefully if there are no modifiers specified
+        # Exit gracefully if there are no datastream specified
         logger.info ("No datastream section found in configuration file.")
         return True
 
@@ -494,33 +494,11 @@ def add_modifiers():
         for mod_data in mod_list:
             modifier_name = mod_data[0]
             logger.info("Component: '%s' operated by '%s'" % (component_name, modifier_name))
-            found = False
-            # Look for the listed modifier in the dictionary of active modifier's
-            for modifier_obj, modifier_instance in persistantstorage.modifierDict.items():
-                if modifier_name in modifier_obj:
-                    found = True
-                    break
-                    
-            if not found:
-                modifier_instance = create_instance(modifier_name)
-                if modifier_instance != None:
-                    persistantstorage.modifierDict[modifier_name] = modifier_instance
-                    logger.info("\tModifier '%s' created" % modifier_name)
-                else:
-                    logger.error("""
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    INITIALIZATION ERROR: Modifier '""" + modifier_name + """'
-    module could not be found!
-    
-    Could not import modules necessary for the selected
-    modifier. Check that they can be found inside
-    your PYTHONPATH variable.
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                    """)
-                    return False
-
             # Make the modifier object take note of the component
-            modifier_instance.register_component(component_name, instance, mod_data)
+            modifier_instance = register_modifier(modifier_name, instance, mod_data[1])
+            if not modifier_instance:
+                return False
+            persistantstorage.modifierDict[modifier_name] = modifier_instance
     
     return True
 
@@ -559,7 +537,7 @@ def init_multinode():
     # Create the instance of the node class
 
     persistantstorage.node_instance = create_instance(classpath, \
-            node_name, server_address, server_port, persistantstorage)
+            node_name, server_address, server_port)
 
 def init(contr):
     """ General initialization of MORSE
@@ -575,6 +553,7 @@ def init(contr):
     persistantstorage.pythonVersion = sys.version_info
     logger.info ("Python Version: %s.%s.%s" % persistantstorage.pythonVersion[:3])
     logger.info ("Blender Version: %s.%s.%s" % morse.core.blenderapi.version())
+    logger.info  ("Python path: %s" % sys.path)
     logger.info ("PID: %d" % os.getpid())
 
     persistantstorage.morse_initialised = False

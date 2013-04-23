@@ -132,17 +132,19 @@ class Robot(Component):
         :param mass: The component's mass
         :type  mass: float
 
-        ..note: The object must have a physics controller for the mass to be
-        applied, otherwise the mass value will be returned as 0.0.
+        .. note::
+            The object must have a physics controller for the mass to be
+            applied, otherwise the mass value will be returned as 0.0.
         """
         self._bpy_object.game.mass = mass
 
     def add_default_interface(self, stream):
         """ Add a service and stream interface to all components of the robot
 
-        ..note: If add_stream or add_service is used explicitly for some
-          components and the specified interface is the same it will be added
-          twice.
+        .. note::
+            If add_stream or add_service is used explicitly for some
+            components and the specified interface is the same it will be
+            added twice.
         """
         for child in self.children:
             if child.is_morseable():
@@ -150,12 +152,29 @@ class Robot(Component):
 
     def make_external(self):
         self._bpy_object.game.properties['Robot_Tag'].name = 'External_Robot_Tag'
+    
+    def make_ghost(self, alpha=0.3):
+        """ Make this robot a ghost
+        
+        The robot is made transparent, with no collision.
+        
+        .. note::
+             A ghost robot has no influence on other simulated robots
+             (no collision, invisible to laser sensors) except for video sensors.
+        
+        :param alpha: Transparency alpha coefficient (0 for invisible, 1 for opaque, default is 0.3)
+        """
+        self._make_transparent(self._bpy_object, alpha)
 
 class WheeledRobot(Robot):
     def __init__(self, filename):
         Robot.__init__(self, filename)
-        # Make the wheels orphans, but keep the transormation applied to
-        #    the parent robot
+
+    def unparent_wheels(self):
+        """ Make the wheels orphans, but keep the transformation applied to
+            the parent robot """
+        # Force Blender to update the transformation matrices of objects
+        bpymorse.get_context_scene().update()
         wheels = [child for child in self._bpy_object.children if \
                   "wheel" in child.name.lower()]
         self.unparent_objects_after_renaming(wheels)
