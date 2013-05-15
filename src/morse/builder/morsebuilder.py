@@ -181,6 +181,7 @@ class Robot(Component):
 class WheeledRobot(Robot):
     def __init__(self, filename):
         Robot.__init__(self, filename)
+        self.unparent_wheels()
 
     def unparent_wheels(self):
         """ Make the wheels orphans, but keep the transformation applied to
