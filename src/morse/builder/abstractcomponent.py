@@ -146,7 +146,7 @@ class AbstractComponent(object):
             obj.matrix_world = transformation
             # This method should be easier, but does not seem to work
             #  because of an incorrect context error
-            #bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
+            bpymorse.clear_parent_keep_transform()
 
     def after_renaming(self):
         """ Unparent the selected objects after renaming so that any 

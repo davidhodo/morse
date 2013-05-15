@@ -201,6 +201,10 @@ def get_objects_in_blend(filepath):
         raise MorseBuilderNoComponentError("Component not found")
     return objects
 
+def clear_parent_keep_transform():
+    if bpy:
+        bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
+
 def save(filepath=None, check_existing=False, compress=True):
     """ Save .blend file
 
