@@ -32,21 +32,8 @@ class MorseTestRunner(unittest.TextTestRunner):
         logger.addHandler(ch)
 
     def run(self, suite):
-        if sys.argv[0].endswith('blender'):
-            # If we arrive here from within MORSE, we have probably run
-            # morse [exec|run] my_test.py
-            # If this case, simply build the environment based on the
-            # setUpEnv of the first test.
-            
-            for test in suite:
-                test.setUpEnv()
-                break
-            
-        else:
-            self.setup_logging()
-            
-            return unittest.TextTestRunner.run(self, suite)
-                
+        self.setup_logging()
+        return unittest.TextTestRunner.run(self, suite)
 
 def follow(file):
     """ Really emulate tail -f
@@ -81,7 +68,8 @@ class MorseTestCase(unittest.TestCase):
             lines = follow(log)
             for line in lines:
                 # Python Error Case
-                if "Python script error" in line:
+                if "[ERROR][MORSE]" in line:
+                    testlogger.error(line.strip())
                     testlogger.error("Exception detected in Morse execution : "
                                      "see %s for details."
                                      " Exiting the current test !" % self.logfile_name)
@@ -116,7 +104,9 @@ class MorseTestCase(unittest.TestCase):
     def tearDown(self):
         self.stopmorse()
         self.tearDownMw()
+        self.logfile.close() # force to flush
         self.t.join()
+
         
     @abstractmethod
     def setUpEnv(self):
@@ -137,7 +127,7 @@ class MorseTestCase(unittest.TestCase):
         with open(self.logfile_name) as log:
             lines = follow(log)
             for line in lines:
-                if  ("Python script error" in line) or ("INITIALIZATION ERROR" in line):
+                if  ("[ERROR][MORSE]" in line) or ("INITIALIZATION ERROR" in line):
                     testlogger.error("Error during MORSE initialization! Check "
                                      "the log file.")
                     return
@@ -157,12 +147,17 @@ class MorseTestCase(unittest.TestCase):
             return unittest.TestCase.run(self, result)
         except KeyboardInterrupt as e:
             self.tearDownMw()
-            os.kill(self.pid, signal.SIGKILL)
+            if self.pid:
+                os.kill(self.pid, signal.SIGKILL)
             if result:
                 result.addError(self, sys.exc_info())
 
     def _extract_pid(self):
-        """ Extract the pid from the log file """
+        """ Extract the pid from the log file.
+
+        We can not simply rely on Popen.subprocess.pid because we need the PID of the
+        Blender process itself, not the (Python) MORSE process.
+        """
 
         with open(self.logfile_name) as log:
             for line in log:
@@ -197,8 +192,6 @@ class MorseTestCase(unittest.TestCase):
                     " and if you use the $MORSE_ROOT env variable, check it points to a correct " + \
                     " place!")
             raise ose
-        
-        morse_initialized = False
 
         t = threading.Thread(target=self.wait_initialization)
         t.start()
@@ -216,17 +209,25 @@ class MorseTestCase(unittest.TestCase):
         """ Cleanly stop MORSE
         """
         import socket
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(("localhost", 4000))
-        s.send(b"id1 simulation quit\n")
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.connect(("localhost", 4000))
+            sock.send(b"id1 simulation quit\n")
+        except (ConnectionRefusedError, KeyboardInterrupt):
+            sock.close()
+            sock = None
+            testlogger.info("MORSE crashed")
 
-        with open(self.logfile_name) as log:
-            lines = follow(log)
-            for line in lines:
-                if "EXITING SIMULATION" in line:
-                    return
+        if sock:
+            sock.close()
+            with open(self.logfile_name) as log:
+                lines = follow(log)
+                for line in lines:
+                    if "EXITING SIMULATION" in line:
+                        return
 
-        os.kill(self.pid, signal.SIGKILL)
+        if self.pid:
+            os.kill(self.pid, signal.SIGKILL)
         testlogger.info("MORSE stopped")
     
     def generate_builder_script(self, test_case):
@@ -250,3 +251,59 @@ class MorseTestCase(unittest.TestCase):
         testlogger.info("Created a temporary builder file for test-case " +\
             test_case.__class__.__name__)
         return tmp_name
+
+
+class MorseBuilderFailureTestCase(MorseTestCase):
+    """ This subclass of MorseTestCase can be used to test MORSE handles
+    properly ill-constructed Builder scripts.
+
+    It will *fail* if the Blender Game Engine get started.
+    """
+
+    # Make this an abstract class
+    __metaclass__ = ABCMeta
+
+    def wait_initialization(self):
+        """ Wait until Morse is initialized """
+
+        testlogger.info("Waiting for MORSE to parse the scene... (timeout: %s sec)" % \
+                        BLENDER_INITIALIZATION_TIMEOUT)
+        # we assume we will correctly detect Builder script issue, so wait_initialization
+        # 'succeed'.
+        self.morse_initialized = True
+
+        with open(self.logfile_name) as log:
+            lines = follow(log)
+            for line in lines:
+                if "Blender Game Engine Started" in line:
+                    testlogger.error("Blender Game Engine started!"
+                                     " This is not expected."
+                                     " See %s for details." % self.logfile_name)
+                    os.kill(os.getpid(), signal.SIGINT)
+                    return
+                elif "[ERROR][MORSE]" in line:
+                    # use 'info' since we suppose to get this error
+                    testlogger.info("MORSE initialization error: %s"%line.strip())
+                    return
+
+    def _checkMorseException(self):
+        return
+
+def main(*test_cases):
+    import sys
+    if sys.argv[0].endswith('blender'):
+        # If we arrive here from within MORSE, we have probably run
+        # morse [exec|run] my_test.py
+        # If this case, simply build the environment based on the
+        # setUpEnv of the first test.
+        for test_class in test_cases:
+            test_class().setUpEnv()
+            return
+    import unittest
+    suite = unittest.TestSuite()
+    loader = unittest.TestLoader()
+    for test_class in test_cases:
+        tests = loader.loadTestsFromTestCase(test_class)
+        suite.addTests(tests)
+    sys.exit(not MorseTestRunner().run(suite).wasSuccessful())
+

@@ -31,6 +31,8 @@ class RotorcraftWaypoints_Test(MorseTestCase):
         motion.add_stream('socket')
         motion.add_service('socket')
 
+        wp_target = Sphere('wp_target')
+
         env = Environment('empty', fastmode = True)
         env.add_service('socket')
 
@@ -40,7 +42,6 @@ class RotorcraftWaypoints_Test(MorseTestCase):
         """
         with Morse() as morse:
         
-            # Read the start position, it must be (0.0, 0.0, 0.0)
             pose_stream = morse.robot.pose
             pose = pose_stream.get()
             self.assertAlmostEqual(pose['x'], -1.24, delta=0.05)
@@ -63,7 +64,7 @@ class RotorcraftWaypoints_Test(MorseTestCase):
 
     def test_waypoint_service_controller(self):
         with Morse() as morse:
-            # Read the start position, it must be (0.0, 0.0, 0.0)
+
             pose_stream = morse.robot.pose
             pose = pose_stream.get()
             self.assertAlmostEqual(pose['x'], -1.24, delta=0.05)
@@ -83,8 +84,5 @@ class RotorcraftWaypoints_Test(MorseTestCase):
 
 ########################## Run these tests ##########################
 if __name__ == "__main__":
-    import unittest
-    from morse.testing.testing import MorseTestRunner
-    suite = unittest.TestLoader().loadTestsFromTestCase(RotorcraftWaypoints_Test)
-    sys.exit(not MorseTestRunner().run(suite).wasSuccessful())
-
+    from morse.testing.testing import main
+    main(RotorcraftWaypoints_Test)

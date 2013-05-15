@@ -80,6 +80,8 @@ class Waypoint(morse.core.actuator.Actuator):
             ignored by the obstacle avoidance, and will not make the \
             robot change its trajectory. Useful when trying to move \
             close to an object of a certain kind")
+    add_property('_type', 'Position', 'ControlType', 'string',
+                 "Kind of control, can be one of ['Velocity', 'Position']")
 
     add_data('x', 0.0, "float",
               "X coordinate of the destination, in world frame, in meter")
@@ -110,10 +112,6 @@ class Waypoint(morse.core.actuator.Actuator):
 
         # Variable to store current speed. Used for the stop/resume services
         self._previous_speed = 0
-
-        # Choose the type of function to move the object
-        #self._type = 'Velocity'
-        self._type = 'Position'
 
         self.local_data['x'] = self._destination[0]
         self.local_data['y'] = self._destination[1]
@@ -440,11 +438,4 @@ class Waypoint(morse.core.actuator.Actuator):
             logger.debug("Applying vx = %.4f, vz = %.4f, rz = %.4f (v = %.4f)" %
                         (vx, vz, rz, v))
 
-            # Give the movement instructions directly to the parent
-            # The second parameter specifies a "local" movement
-            if self._type == 'Position':
-                parent.bge_object.applyMovement([vx, 0, vz], True)
-                parent.bge_object.applyRotation([0, 0, rz], True)
-            elif self._type == 'Velocity':
-                parent.bge_object.setLinearVelocity([vx, 0, vz], True)
-                parent.bge_object.setAngularVelocity([0, 0, rz], True)
+            self.apply_speed(self._type, [vx, 0, vz], [0, 0, rz])
