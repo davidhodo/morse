@@ -555,6 +555,8 @@ def init(contr):
     persistantstorage.morse_initialised = False
     persistantstorage.base_clock = time.clock()
     persistantstorage.current_time = 0.0
+    persistantstorage.sim_ticks = 0
+
     # Variable to keep trac of the camera being used
     persistantstorage.current_camera_index = 0
 
@@ -694,6 +696,7 @@ def simulation_main(contr):
     try:
         persistantstorage.current_time = time.clock() - \
                                          persistantstorage.base_clock
+        persistantstorage.sim_ticks = persistantstorage.sim_ticks+1                                 
     except AttributeError:
         # If the 'base_clock' variable is not defined, there probably was
         #  a problem while doing the init, so we'll abort the simulation.
