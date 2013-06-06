@@ -33,11 +33,11 @@ class OdometryPublisher(ROSPublisherTF):
         self.publish(odometry)
 
         # send current odometry transform
-        self.sendTransform(self.get_position(),
-                           self.get_orientation(),
-                           odometry.header.stamp,
-                           odometry.child_frame_id,
-                           odometry.header.frame_id)
+        # self.sendTransform(self.get_position(),
+        #                    self.get_orientation(),
+        #                    odometry.header.stamp,
+        #                    odometry.child_frame_id,
+        #                    odometry.header.frame_id)
 
 
     def get_orientation(self):
