@@ -23,7 +23,7 @@ class Keyboard(Actuator):
 
     add_property('_type', 'Position', 'ControlType', 'string',
                  "Kind of control to move the parent robot, in ['Position', "
-                 "'Velocity', 'Differential']")
+                 "'Velocity', 'Differential', 'SteerForce']")
     add_property('_speed', 1.0, 'Speed', 'float',
                  "Movement speed of the parent robot, in m/s")
 
@@ -76,6 +76,8 @@ class Keyboard(Actuator):
             self.apply_speed(self._type, [vx, vy, vz], [rx, ry, rz / 2.0])
         elif self._type == 'Differential':
             self.apply_vw_wheels(vx, rz)
+        elif self._type == 'SteerForce':
+            self.apply_steer_force(vx, rz)
 
     # from v_omega_diff_drive
     def apply_vw_wheels(self, vx, vw):
@@ -121,3 +123,45 @@ class Keyboard(Actuator):
             logger.debug("New speeds set: left=%.4f, right=%.4f" %
                          (w_ws_l, w_ws_r))
 
+    # from steer_force
+    def apply_steer_force(self, vx, rz):
+        """ Apply (v, steer) to the parent robot. """
+        vehicle = self.robot_parent.vehicle
+
+        # Update the steering value for these wheels:
+        # The number at the end represents the wheel 'number' in the 
+        # order they were created when initializing the robot.
+        # Front wheels #0 and #1.
+        # Rear wheels #2 and #3.
+        if (rz==0):
+            steer=0
+        elif (rz>0):
+            steer=0.5
+        else:
+            steer=-0.5
+        vehicle.setSteeringValue(steer, 0)
+        vehicle.setSteeringValue(steer, 1)
+
+        if (vx>0):
+            force=5;
+            brake=0;
+        else:
+            force=0;
+            brake=100;
+
+        logger.info("Apply steer/force/brake: %f, %f, %f" % (steer, force, brake))
+
+        # Update the Force (speed) for these wheels:
+        vehicle.applyEngineForce(force * .4, 0)
+        vehicle.applyEngineForce(force * .4, 1)
+        vehicle.applyEngineForce(force * .4, 2)
+        vehicle.applyEngineForce(force * .4, 3)
+
+        # Brakes:
+        # Applies the braking force to each wheel listed:
+        # ['brakes'] = the game property value for the car labeled 'brakes'
+        # Default value is 0:
+        vehicle.applyBraking(brake * .1,  0)
+        vehicle.applyBraking(brake * .1,  1)
+        vehicle.applyBraking(brake * 1.3, 2)
+        vehicle.applyBraking(brake * 1.3, 3)
